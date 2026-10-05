@@ -1,0 +1,12 @@
+# 本仓库只管理项目级文档与 QA 验收脚本；frontend/ 与 backend/ 各自独立成库
+/*
+!/.gitignore
+!/docs
+!/.qa-harness
+
+# QA 运行产物与依赖不入库
+.qa-harness/node_modules/
+.qa-harness/shots/
+.qa-harness/test-results/
+.qa-harness/playwright-report/
+.qa-harness/.auth/
