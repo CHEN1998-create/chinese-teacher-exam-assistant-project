@@ -119,11 +119,11 @@ await runBrowser(async (page) => {
   // —— 查看匹配依据 ——
   await page.getByRole("link", { name: "查看优先机会的依据与下一步" }).click();
   await page.waitForURL(/\/opportunities\/.+/, { timeout: 10000 });
-  await page.getByText("逐项资格核对").waitFor({ timeout: 15000 });
-  await page.getByText("官方依据与版本").waitFor({ timeout: 5000 });
+  await page.getByText("关键依据与不确定项").waitFor({ timeout: 15000 });
+  await page.getByText("官方原文与岗位表位置").waitFor({ timeout: 5000 });
   body = await page.locator("body").innerText();
-  check("详情页展示逐项资格核对", body.includes("逐项资格核对"), "");
-  check("详情页展示官方依据与版本", body.includes("官方依据与版本"), "");
+  check("详情页展示关键依据与不确定项", body.includes("关键依据与不确定项"), "");
+  check("详情页展示官方原文与岗位表位置", body.includes("官方原文与岗位表位置"), "");
 
   // —— 关注 ——
   await page.getByRole("button", { name: "关注（加入考虑中）" }).click();
