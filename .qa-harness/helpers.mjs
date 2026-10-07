@@ -1,7 +1,7 @@
 // QA 验收辅助库（仅本地验收用，不属于产品代码）
 import { chromium } from "playwright";
 
-export const BASE = "http://localhost:3000";
+export const BASE = (process.env.QA_BASE_URL ?? process.argv[2] ?? "http://localhost:3000").replace(/\/$/, "");
 export const SHOT_DIR = new URL("./shots/", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 
 export const ACCOUNTS = {
@@ -88,7 +88,7 @@ export async function logout(page) {
  */
 export async function guestOnboarding(page, base = BASE) {
   await page.goto(`${base}/`, { waitUntil: "networkidle" });
-  await page.getByRole("link", { name: "看看我可能能报哪些" }).click();
+  await page.getByTestId("start-onboarding").click();
   await page.waitForURL("**/onboarding", { timeout: 10000 });
   await page.getByRole("button", { name: "添加第一个地区" }).click();
   await page.getByRole("button", { name: "下一步", exact: true }).click();

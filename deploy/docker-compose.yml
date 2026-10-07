@@ -62,8 +62,8 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      # 演示模式（HTTP/IP 访问）留空即可；HTTPS 生产时设为已备案域名（见 Caddyfile）
-      SITE_DOMAIN: ${SITE_DOMAIN:-}
+      # 受邀登录必须使用明确配置的 HTTPS 域名；缺失时拒绝启动。
+      SITE_DOMAIN: ${SITE_DOMAIN:?Set SITE_DOMAIN to the approved HTTPS domain}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

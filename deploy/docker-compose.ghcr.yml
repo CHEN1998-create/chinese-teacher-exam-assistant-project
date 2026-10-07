@@ -1,0 +1,65 @@
+# 从 GitHub Container Registry 拉取预构建镜像；默认仅启动应用和迁移，不开放公网端口。
+# 未完成 ICP 备案前，使用 docker-compose.internal.yml 映射到服务器回环地址测试。
+name: jiaozhao
+
+x-backend: &backend
+  image: ghcr.io/${GHCR_OWNER:?Set GHCR_OWNER}/chinese-teacher-exam-assistant-backend:${BACKEND_IMAGE_TAG:-latest}
+  env_file: backend.env
+  networks:
+    - default
+    - legacy-pg
+
+services:
+  migrate:
+    <<: *backend
+    command: npx prisma migrate deploy
+    restart: on-failure:20
+
+  backend:
+    <<: *backend
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - backend_snapshots:/app/.data
+    restart: unless-stopped
+
+  frontend:
+    image: ghcr.io/${GHCR_OWNER:?Set GHCR_OWNER}/chinese-teacher-exam-assistant:${FRONTEND_IMAGE_TAG:-latest}
+    env_file: frontend.env
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # 仅在域名备案、DNS 与 HTTPS 条件就绪后显式启用 --profile public。
+  caddy:
+    image: caddy:2-alpine
+    profiles: [public]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:-}
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - >-
+        test -n "$$SITE_DOMAIN" || { echo 'SITE_DOMAIN is required for public deployment' >&2; exit 1; };
+        exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    restart: unless-stopped
+
+volumes:
+  backend_snapshots:
+  caddy_data:
+  caddy_config:
+
+networks:
+  # 当前轻量服务器已有 PostgreSQL 容器和 kaobian-net；本文件不重建数据库。
+  legacy-pg:
+    external: true
+    name: kaobian-net

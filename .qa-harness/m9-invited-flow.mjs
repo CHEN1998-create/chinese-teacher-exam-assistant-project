@@ -79,7 +79,7 @@ await runBrowser(async (page, context) => {
 
   // —— 访客：画像 → 初步结果（前端预览引擎，未登录即可见） ——
   await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-  await page.getByRole("link", { name: "看看我可能能报哪些" }).click();
+  await page.getByTestId("start-onboarding").click();
   await page.waitForURL("**/onboarding", { timeout: 10000 });
   await fillOnboarding(page);
   await page.waitForURL("**/preview", { timeout: 10000 });
@@ -126,10 +126,10 @@ await runBrowser(async (page, context) => {
   await page.getByRole("link", { name: "查看优先机会的依据与下一步" }).click();
   await page.waitForURL(/\/opportunities\/.+/, { timeout: 10000 });
   await page.getByText("关键依据与不确定项").waitFor({ timeout: 15000 });
-  await page.getByText("官方原文与岗位表位置").waitFor({ timeout: 5000 });
+  await page.getByText(/示例公告与岗位表位置|官方原文与岗位表位置/).waitFor({ timeout: 5000 });
   body = await page.locator("body").innerText();
   check("详情页展示关键依据与不确定项", body.includes("关键依据与不确定项"), "");
-  check("详情页展示官方原文与岗位表位置", body.includes("官方原文与岗位表位置"), "");
+  check("详情页展示公告与岗位表位置", /示例公告与岗位表位置|官方原文与岗位表位置/.test(body), "");
 
   // —— 关注（cookie 身份写服务端） ——
   await page.getByRole("button", { name: "关注（加入考虑中）" }).click();
@@ -164,9 +164,9 @@ await runBrowser(async (page, context) => {
   await page.goto(`${BASE}/study`, { waitUntil: "networkidle" });
   await page.waitForTimeout(600);
   body = await page.locator("body").innerText();
-  if (body.includes("我已核对，确认考试内容")) {
+  if (body.includes("我已核对，确认考试内容") || body.includes("继续演示：确认示例考情")) {
     note("存在考试内容核对门禁，先确认");
-    await page.getByRole("button", { name: "我已核对，确认考试内容" }).click();
+    await page.getByRole("button", { name: /我已核对，确认考试内容|继续演示：确认示例考情/ }).click();
     await page.waitForTimeout(600);
   }
   await setupStudyMaterials(page);

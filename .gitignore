@@ -8,6 +8,8 @@
 !/deploy
 /deploy/*
 !/deploy/docker-compose.yml
+!/deploy/docker-compose.ghcr.yml
+!/deploy/docker-compose.internal.yml
 !/deploy/Caddyfile
 !/deploy/backend.env.example
 !/deploy/frontend.env.example

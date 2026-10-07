@@ -2,12 +2,11 @@
 // → 查看日程 → 设为主要目标 → 备考确认/资料/计划 → 开始第一项学习任务。
 //
 // 运行前提（真实环境）：
-//   1) frontend 已启动（默认 http://localhost:3000）；
-//   2) backend + PostgreSQL 可用：登录后的机会/关注/日程/目标全部走同源 /api/*
-//      （demo 与 invited 模式皆然；区别仅在画像随请求提交或由后端会话读取）；
+//   1) frontend 已启动（默认 http://localhost:3000；线上验收设置 QA_BASE_URL）；
+//   2) demo 模式无需 backend：机会/关注/日程保存在当前浏览器；
+//      invited 模式请改跑 m9-invited-flow.mjs（需要 backend + PostgreSQL）；
 //   3) node 中可解析 playwright（.qa-harness 已独立安装）。
-// 无后端/数据库时脚本会在“登录后进入机会列表”处失败并如实报 FAIL（不会标记通过）；
-// 访客段（画像→初步机会→事件暂存）不依赖后端，已可独立验证。
+// 本脚本只验公开演示模式；不会向服务端发送个人画像或事件。
 import { BASE, check, note, runBrowser, clearLocalStorage } from "./helpers.mjs";
 
 async function loginFromPreview(page) {
@@ -84,11 +83,15 @@ async function readEvents(page) {
 }
 
 await runBrowser(async (page) => {
+  const apiRequests = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname.startsWith("/api/")) apiRequests.push(request.url());
+  });
   await clearLocalStorage(page);
 
   // —— 访客：首页进入画像 ——
   await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-  await page.getByRole("link", { name: "看看我可能能报哪些" }).click();
+  await page.getByTestId("start-onboarding").click();
   await page.waitForURL("**/onboarding", { timeout: 10000 });
   check("画像页第 1 组展示", (await page.locator("body").innerText()).includes("你能接受去哪些地区"), "");
 
@@ -108,7 +111,7 @@ await runBrowser(async (page) => {
 
   // —— 登录保存 ——
   await loginFromPreview(page);
-  // 匹配结果是登录后即时向 /api/opportunities/match 请求的，轮询等待而不是固定 sleep
+  // 演示匹配在浏览器本机完成，轮询等待界面稳定。
   await page.getByText(/有效机会\s*\d+\s*个/).waitFor({ timeout: 15000 });
   body = await page.locator("body").innerText();
   check("登录后进入机会列表", body.includes("有效机会"), body.match(/有效机会\s*\d+\s*个/)?.[0] ?? "");
@@ -120,10 +123,11 @@ await runBrowser(async (page) => {
   await page.getByRole("link", { name: "查看优先机会的依据与下一步" }).click();
   await page.waitForURL(/\/opportunities\/.+/, { timeout: 10000 });
   await page.getByText("关键依据与不确定项").waitFor({ timeout: 15000 });
-  await page.getByText("官方原文与岗位表位置").waitFor({ timeout: 5000 });
+  await page.getByText("示例公告与岗位表位置").waitFor({ timeout: 5000 });
   body = await page.locator("body").innerText();
   check("详情页展示关键依据与不确定项", body.includes("关键依据与不确定项"), "");
-  check("详情页展示官方原文与岗位表位置", body.includes("官方原文与岗位表位置"), "");
+  check("详情页明确标示示例公告", body.includes("示例公告与岗位表位置") && body.includes("虚构演示"), "");
+  check("虚构官方域名不可点击", await page.locator('a[href*="example.gov.cn"]').count() === 0, "");
 
   // —— 关注 ——
   await page.getByRole("button", { name: "关注（加入考虑中）" }).click();
@@ -162,9 +166,9 @@ await runBrowser(async (page) => {
   await page.goto(`${BASE}/study`, { waitUntil: "networkidle" });
   await page.waitForTimeout(600);
   body = await page.locator("body").innerText();
-  if (body.includes("我已核对，确认考试内容")) {
+  if (body.includes("继续演示：确认示例考情")) {
     note("存在考试内容核对门禁，先确认");
-    await page.getByRole("button", { name: "我已核对，确认考试内容" }).click();
+    await page.getByRole("button", { name: "继续演示：确认示例考情" }).click();
     await page.waitForTimeout(600);
   }
 
@@ -226,4 +230,5 @@ await runBrowser(async (page) => {
   );
   check("follow_status_changed 带 to=preparing", Boolean(preparing), preparing ? JSON.stringify(preparing.props) : "");
   check("没有 live 事件被错误标记为 seed", live.every((e) => e.source === "live"), "");
+  check("公开演示未请求后端 API", apiRequests.length === 0, apiRequests.slice(0, 3).join(" | ") || "0 次");
 });

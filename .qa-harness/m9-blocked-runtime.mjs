@@ -38,8 +38,8 @@ await runBrowser(async (page, context) => {
     // 1) 首页：访客价值主张与画像入口可用
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
     let body = await page.locator("body").innerText();
-    check("首页核心内容可见", body.includes("查看当前可能适合的教师公开招聘"), "");
-    check("首页画像入口可用", await page.getByRole("link", { name: "看看我可能能报哪些" }).isVisible(), "");
+    check("首页核心内容可见", body.includes("再看自己可能能报哪些教师岗位"), "");
+    check("首页画像入口可用", await page.getByTestId("start-onboarding").isVisible(), "");
 
     // 2) 访客画像 → 登录：在断跨源条件下完成画像、预览与 demo 登录
     await page.evaluate(() => localStorage.clear());
