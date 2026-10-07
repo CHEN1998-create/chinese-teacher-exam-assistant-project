@@ -24,7 +24,7 @@ FRONTEND_IMAGE_TAG=sha-前端仓库的完整提交SHA
 # SITE_DOMAIN=已备案的域名
 ```
 
-未备案时，仅启动**内部测试入口**，前端只映射到服务器的 `127.0.0.1:3002`，通过 SSH 端口转发在自己的电脑访问；不要开放安全组 3002。GHCR 首次发布的 Package 默认是私有的：若保持私有，服务器需要使用具有 `read:packages` 权限的 GitHub Personal Access Token（classic）执行 `docker login ghcr.io` 后才能拉取；不要把令牌写入命令历史、Compose 文件或本仓库。也可以在 Package 设置中明确改为公开，从而匿名拉取，但公开镜像内容可被任何人下载。
+未备案时，仅启动**内部测试入口**，前端只映射到服务器的 `127.0.0.1:3002`，通过 SSH 端口转发在自己的电脑访问；不要开放安全组 3002。本 Compose 的前后端镜像拉取地址使用南京大学缓存镜像站 `ghcr.nju.edu.cn`，GitHub Actions 发布地址仍是官方 `ghcr.io`。**镜像站方案仅用于可匿名拉取的公开 GHCR Package**；首次发布的 Package 默认是私有的，需由所有者明确决定是否改为公开（公开后任何人可下载镜像）。若保持私有，请把 Compose 中两处镜像地址改回 `ghcr.io`，只向官方 `ghcr.io` 使用具备 `read:packages` 权限的 GitHub Personal Access Token（classic）登录；**不要把 GitHub 令牌交给镜像站**，也不要将其写入命令历史、Compose 文件或本仓库。镜像站是否能从当前阿里云服务器稳定拉取尚未实测。
 
 ```bash
 cd /opt/kaobian/deploy

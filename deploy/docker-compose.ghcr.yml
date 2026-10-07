@@ -1,9 +1,10 @@
-# 从 GitHub Container Registry 拉取预构建镜像；默认仅启动应用和迁移，不开放公网端口。
+# 经南京大学 GHCR 缓存镜像站拉取预构建镜像；镜像仍发布到 ghcr.io。
+# 仅适用于可匿名拉取的公开 GHCR Package；私有镜像请改回 ghcr.io，勿向镜像站发送令牌。
 # 未完成 ICP 备案前，使用 docker-compose.internal.yml 映射到服务器回环地址测试。
 name: jiaozhao
 
 x-backend: &backend
-  image: ghcr.io/${GHCR_OWNER:?Set GHCR_OWNER}/chinese-teacher-exam-assistant-backend:${BACKEND_IMAGE_TAG:-latest}
+  image: ghcr.nju.edu.cn/${GHCR_OWNER:?Set GHCR_OWNER}/chinese-teacher-exam-assistant-backend:${BACKEND_IMAGE_TAG:-latest}
   env_file: backend.env
   networks:
     - default
@@ -25,7 +26,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: ghcr.io/${GHCR_OWNER:?Set GHCR_OWNER}/chinese-teacher-exam-assistant:${FRONTEND_IMAGE_TAG:-latest}
+    image: ghcr.nju.edu.cn/${GHCR_OWNER:?Set GHCR_OWNER}/chinese-teacher-exam-assistant:${FRONTEND_IMAGE_TAG:-latest}
     env_file: frontend.env
     depends_on:
       - backend
