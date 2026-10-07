@@ -1,0 +1,15 @@
+# 教招有据 · 受邀环境反代
+#
+# 当前为「演示链接」模式：纯 HTTP，通过服务器公网 IP 直接访问，不申请证书。
+# 切到生产 HTTPS 时：把下方 `:80` 改成 `{$SITE_DOMAIN}`，并在 compose 的 .env 设
+# SITE_DOMAIN=已备案域名；Caddy 会自动申请/续期 Let's Encrypt 证书并 80→443 跳转。
+#
+# 安全响应头（CSP 等）由 Next.js 在 next.config.ts 统一输出，代理层不重复添加。
+
+:80 {
+	encode zstd gzip
+
+	# 全部流量交给 Next.js：页面由 Next 直接服务，
+	# /api/* 由 Next 服务端反代到 backend（自动携带 x-internal-token）。
+	reverse_proxy frontend:3000
+}

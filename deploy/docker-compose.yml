@@ -1,0 +1,85 @@
+# 教招有据 · 受邀环境（环境 B）单机编排
+#
+# 拓扑（与 frontend/DEPLOYMENT.md §13 一致的简化落地版）：
+#   Caddy(80/443, 自动HTTPS) → frontend:3000（Next.js 同源服务）
+#     → Next /api/* 服务端反代 → backend:3000（NestJS，不对公网暴露）
+#     → PostgreSQL（复用服务器上已有的实例，或 --profile with-db 启用容器版）
+#
+# 数据库迁移由一次性 migrate 任务自动幂等执行（npx prisma migrate deploy）。
+# 真实域名与密钥写在同目录 .env / backend.env / frontend.env（均不入库）。
+# 用法见同目录 README.md。
+
+x-backend: &backend
+  build: { context: ../backend }
+  image: kaobian/backend:latest
+  env_file: backend.env
+  # 同时挂两个网络：default 供 frontend/caddy 访问，legacy-pg 访问服务器上已有的
+  # kaobian-postgres 容器（DATABASE_URL 主机填容器名 kaobian-postgres）
+  networks:
+    - default
+    - legacy-pg
+
+services:
+  # 可选：容器化 PostgreSQL（服务器想弃用裸装 PG 时再启用）
+  db:
+    image: postgres:16-alpine
+    profiles: ["with-db"]
+    env_file: kaobian-db.env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d kaobian"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  # 一次性迁移：幂等应用全部 Prisma 迁移（含 trial_events、correction_review），
+  # 成功退出后 backend 才启动；数据库暂不可达时自动重试（上限 20 次）。
+  migrate:
+    <<: *backend
+    command: npx prisma migrate deploy
+    restart: on-failure:20
+
+  backend:
+    <<: *backend
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  frontend:
+    build: { context: ../frontend }
+    image: kaobian/frontend:latest
+    env_file: frontend.env
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # 演示模式（HTTP/IP 访问）留空即可；HTTPS 生产时设为已备案域名（见 Caddyfile）
+      SITE_DOMAIN: ${SITE_DOMAIN:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+
+networks:
+  # 复用服务器上已有的 kaobian-postgres 容器所在网络（docker inspect 查得 kaobian-net）；
+  # 该容器由旧 docker run 部署创建，数据卷 kaobian-pgdata，本编排不接管、不重建它
+  legacy-pg:
+    external: true
+    name: kaobian-net
