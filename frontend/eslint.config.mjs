@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // 后端与 QA 脚本是独立工程，不属于前端 Next.js 构建/检查范围
+    "backend/**",
+    ".qa-harness/**",
   ]),
 ]);
 
