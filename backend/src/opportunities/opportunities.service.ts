@@ -149,6 +149,8 @@ export class OpportunitiesService {
   private buildCatalogSnapshot(): CatalogSnapshot[] {
     const snapshots: CatalogSnapshot[] = [];
     for (const announcement of PUBLISHED_ANNOUNCEMENTS) {
+      // 模块 7.5 合规过滤：用户端不返回 AI 初核待人工复核记录
+      if (announcement.dataset === 'real') continue;
       const version = currentVersion(announcement);
       for (const unit of version.units) {
         // 旧版本中同 code 单元的 id（关注记录可能仍指向旧版本单元 id）
@@ -615,6 +617,8 @@ export class OpportunitiesService {
     versionId: string;
   } {
     for (const announcement of PUBLISHED_ANNOUNCEMENTS) {
+      // 模块 7.5 合规过滤：普通用户端不允许关注/查看 AI 初核待人工复核记录
+      if (announcement.dataset === 'real') continue;
       const version = currentVersion(announcement);
       const unit = version.units.find((u) => u.id === unitId);
       if (unit) return { announcementId: announcement.id, versionId: version.id };

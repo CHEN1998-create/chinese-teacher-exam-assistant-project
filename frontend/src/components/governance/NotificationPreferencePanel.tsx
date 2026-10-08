@@ -42,7 +42,7 @@ export function NotificationPreferencePanel() {
           description="关闭后将不再收到学习提醒与考情变化推送；纠错结果、计划重新确认等必要通知不受影响"
         />
 
-        <div className="border-t border-slate-100 pt-4 space-y-4">
+        <div className="border-t border-line pt-4 space-y-4">
           <Switch
             checked={pref.studyReminder && !pref.nonEssentialOff}
             disabled={pref.nonEssentialOff}
@@ -52,7 +52,7 @@ export function NotificationPreferencePanel() {
           />
 
           <div className="flex items-center gap-3 pl-1">
-            <label htmlFor="reminder-time" className="text-sm text-slate-500 shrink-0">
+            <label htmlFor="reminder-time" className="text-sm text-ink-muted shrink-0">
               每日提醒时间
             </label>
             <input
@@ -61,9 +61,9 @@ export function NotificationPreferencePanel() {
               value={pref.reminderTime}
               disabled={pref.nonEssentialOff || !pref.studyReminder}
               onChange={(e) => update({ reminderTime: e.target.value })}
-              className="h-9 rounded-lg border border-slate-300 px-2 text-sm disabled:bg-slate-50 disabled:text-slate-400"
+              className="h-9 rounded-lg border border-line px-2 text-sm disabled:bg-canvas disabled:text-ink-muted"
             />
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-ink-muted">
               演示环境仅记录偏好，不会真实定时推送
             </span>
           </div>
@@ -91,7 +91,7 @@ export function NotificationPreferencePanel() {
           />
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
       </div>
     </Card>
   );

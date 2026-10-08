@@ -89,7 +89,7 @@ export function CorrectionModal({
       }
     >
       <div className="space-y-3">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-ink-muted">
           如果你发现页面内容与官方公告不一致，请指出位置并说明。我们会核对官方原文；
           确认有误的，将通过新版本更正，不会直接改动结论。
         </p>
@@ -120,7 +120,7 @@ export function CorrectionModal({
           onChange={(e) => setContact(e.target.value)}
           placeholder="需要回访时使用，不会公开展示"
         />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
       </div>
     </Modal>
   );

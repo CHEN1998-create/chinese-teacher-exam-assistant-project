@@ -61,20 +61,20 @@ export function OpportunityListItem({
   return (
     <article
       className={cn(
-        "rounded-xl border bg-white",
-        priority ? "border-blue-300 ring-1 ring-blue-100" : "border-slate-200",
+        "rounded-xl border bg-surface",
+        priority ? "border-brand ring-1 ring-brand-soft" : "border-line",
       )}
     >
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
           <Link
             href={`/opportunities/${unit.unit.id}`}
-            className="min-w-0 rounded text-sm font-semibold text-slate-900 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+            className="min-w-0 rounded text-sm font-semibold text-ink hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand"
           >
-            <span className="font-normal text-slate-500">
+            <span className="font-normal text-ink-muted">
               {regionLabel(unit.unit.region)}
             </span>
-            <span className="mx-1.5 text-slate-300" aria-hidden="true">
+            <span className="mx-1.5 text-ink-muted/60" aria-hidden="true">
               |
             </span>
             <span className="break-words">{unit.unit.name}</span>
@@ -82,10 +82,10 @@ export function OpportunityListItem({
           {closedGate ? (
             <GateTag code={closedGate.code} />
           ) : regionOutOfScope ? (
-            <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-slate-600">
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-ink-muted">
               <span
                 aria-hidden="true"
-                className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-400 text-[10px] font-bold text-white"
+                className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-ink-muted text-[10px] font-bold text-white"
               >
                 ◌
               </span>
@@ -96,7 +96,7 @@ export function OpportunityListItem({
           )}
         </div>
 
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm text-ink-muted">
           {natureShortLabel(unit.unit.employmentNature.code as never)} ·{" "}
           {stageLabel(unit.unit.stage)} · 招 {unit.unit.headcount} 人
         </p>
@@ -104,14 +104,14 @@ export function OpportunityListItem({
         <p
           className={cn(
             "mt-1 text-sm",
-            closedGate || deadline.closed ? "text-slate-400" : "text-slate-600",
+            closedGate || deadline.closed ? "text-ink-muted" : "text-ink-muted",
           )}
         >
           {unit.announcement.dataset === "demo" ? "示例报名" : "报名"}{deadline.text}
         </p>
 
         {unit.announcement.dataset === "demo" && (
-          <p className="mt-2 text-xs font-medium text-amber-700">
+          <p className="mt-2 text-xs font-medium text-warn">
             虚构演示机会 · 日期随演示时间移动 · 不可用于真实报名
           </p>
         )}
@@ -120,7 +120,7 @@ export function OpportunityListItem({
         <p
           className={cn(
             "mt-2 text-sm leading-6",
-            closedGate ? "font-medium text-red-700" : "text-slate-600",
+            closedGate ? "font-medium text-danger" : "text-ink-muted",
           )}
         >
           {closedGate ? closedGate.reason : unit.summary}
@@ -128,14 +128,14 @@ export function OpportunityListItem({
 
         {unit.announcement.dataset === "real" && (
           <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-            <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-700">
+            <span className="inline-flex items-center rounded-full bg-warn-soft px-2 py-0.5 font-medium text-warn">
               真实记录 · AI 初核待人工复核
             </span>
             <a
               href={unit.announcement.officialUrl}
               target="_blank"
               rel="noreferrer"
-              className="font-medium text-blue-700 hover:text-blue-800"
+              className="font-medium text-brand hover:text-brand-strong"
             >
               官方原文 ↗
             </a>
@@ -144,7 +144,7 @@ export function OpportunityListItem({
                 href={unit.unit.sourceRow.locator.url}
                 target="_blank"
                 rel="noreferrer"
-                className="font-medium text-blue-700 hover:text-blue-800"
+                className="font-medium text-brand hover:text-brand-strong"
               >
                 岗位表附件 ↗
               </a>
@@ -154,17 +154,17 @@ export function OpportunityListItem({
 
         {follow && (
           <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-600">
+            <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 font-medium text-ink-muted">
               {FOLLOW_STATUS_LABELS[follow.status]}
             </span>
             {follow.role && (
-              <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 font-medium text-blue-700">
+              <span className="inline-flex items-center rounded-full bg-brand-soft px-2 py-0.5 font-medium text-brand">
                 {follow.role === "primary" ? "★ " : ""}
                 {STUDY_TARGET_ROLE_LABELS[follow.role]}
               </span>
             )}
             {follow.newerVersion && (
-              <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-700">
+              <span className="inline-flex items-center rounded-full bg-warn-soft px-2 py-0.5 font-medium text-warn">
                 公告有新版本
               </span>
             )}
@@ -175,7 +175,7 @@ export function OpportunityListItem({
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
           <Link
             href={`/opportunities/${unit.unit.id}`}
-            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="inline-flex items-center justify-center rounded-lg bg-brand px-3.5 py-2 text-sm font-medium text-white transition hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
           >
             {listCardNextStepLabel(unit)}
           </Link>
@@ -184,7 +184,7 @@ export function OpportunityListItem({
               type="button"
               onClick={() => onToggleFollow(unit)}
               disabled={followBusy}
-              className="text-xs font-medium text-slate-600 underline underline-offset-2 hover:text-blue-700 disabled:opacity-50"
+              className="text-xs font-medium text-ink-muted underline underline-offset-2 hover:text-brand disabled:opacity-50"
             >
               {follow ? "取消关注" : "关注"}
             </button>
@@ -194,7 +194,7 @@ export function OpportunityListItem({
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
             aria-controls={panelId}
-            className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 underline underline-offset-2 hover:text-slate-700"
+            className="inline-flex items-center gap-1 text-xs font-medium text-ink-muted underline underline-offset-2 hover:text-ink"
           >
             {expanded ? "收起条件核对" : "展开条件核对"}
             <svg
@@ -221,11 +221,11 @@ export function OpportunityListItem({
       {expanded && (
         <div
           id={panelId}
-          className="border-t border-slate-200 px-4 py-2"
+          className="border-t border-line px-4 py-2"
           aria-label="条件核对"
         >
           <ConditionRows dimensions={unit.dimensions} />
-          <p className="py-2 text-[11px] text-slate-400">
+          <p className="py-2 text-[11px] text-ink-muted">
             完整依据、官方原文与版本信息见详情页。
           </p>
         </div>

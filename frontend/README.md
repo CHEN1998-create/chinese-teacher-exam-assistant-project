@@ -6,7 +6,7 @@
 
 > **品牌口径**：“教招有据”是产品名；“验证版”是阶段标签，仅用于试用说明与内部文档，不默认拼进 Logo；固定功能副标题为“教师招聘机会与资格预筛”；所有资格结论均为预筛，最终以官方公告和招聘单位审核为准。商标、域名与平台账号名称占用状态为**待核查**，对外发布前须完成近似查询，详见 [`../docs/教招有据-模块0-品牌清单与版本决策记录.md`](../docs/教招有据-模块0-品牌清单与版本决策记录.md)。
 
-当前实现仍以根目录 [`PRD-全国教师公开招聘与备考助手-v6.1.md`](../PRD-全国教师公开招聘与备考助手-v6.1.md) 为历史基线；本轮验证目标见 [`PRD-全国教师公开招聘助手-v7.0-研究验证版.md`](../PRD-全国教师公开招聘助手-v7.0-研究验证版.md)。本 README 只描述前端部分**当前实现了什么、计划迁移到什么状态**，不复写 PRD。
+当前实现仍以根目录 [`PRD-全国教师公开招聘与备考助手-v6.1.md`](../PRD-全国教师公开招聘与备考助手-v6.1.md) 为历史基线；本轮验证目标见 [`PRD-全国教师公开招聘助手-v7.0-研究验证版.md`](../PRD-全国教师公开招聘助手-v7.0-研究验证版.md)。本 README 只描述前端仓库**当前实现了什么、计划迁移到什么状态**，不复写 PRD。
 
 ## 文档地图
 
@@ -201,3 +201,15 @@ npm run start:dev
 ---
 
 *本 README 于 2026-10-05（v6.1 模块 9 收口 + 验收）按当前代码重写并更新验收状态：登录后 P0 闭环 E2E 23/23（demo 会话）、invited 受邀链路 E2E 29/29（服务端登录/HttpOnly 会话/画像迁移/账号隔离）、断跨源回归 7/7 + 2/2、中国移动家庭宽带与手机蜂窝无代理冒烟均通过；公开受邀地址（境内部署 + ICP + HTTPS）仍待办，未实现能力继续标注 ❌/🚧，不得移入“已实现”。*
+
+### 2026-10-08 页面体验优化实现状态
+
+本轮按 [`docs/教招有据-页面体验优化-AI实施提示词.md`](../docs/教招有据-页面体验优化-AI实施提示词.md) 完成阶段 A—E 的**前端代码侧**改动，未变更后端、数据模型与路由结构：
+
+- **阶段 A 设计系统**：在 `src/app/globals.css` 引入 Tailwind v4 `@theme inline` 语义色彩 Token（`bg-canvas/bg-surface/bg-brand/bg-brand-soft/bg-success/bg-success-soft/bg-warn/bg-warn-soft/bg-danger/bg-danger-soft/text-ink/text-ink-muted/border-line/divide-line` 等），组件层改用语义 Token 替代散落的 `slate-*/blue-*/red-*/emerald-*/amber-*` 原子色；`prefers-reduced-motion` 在 globals.css 与 Disclosure/Skeleton 已有处理。
+- **阶段 B 首次体验**：首页（`src/app/page.tsx`）改为双入口（开始匹配 / 先了解我们怎么判断），新增 `/learn` 30 秒说明页；问答减负（暂不提供同样记录）、阶段反馈、访客草稿恢复（`profile_resumed`）、结果页回答摘要修改（`preview_summary_edited`）；埋点字典新增 8 个补缺口事件（见 `src/lib/analytics/dictionary.ts` 第 241—297 行）。
+- **阶段 C 机会决策**：列表压缩为结论 + 有效机会数；访客机会卡（`src/components/ia/OpportunityCard.tsx`）改为五项信息（地区+岗位/用工性质+学段/匹配状态/报名截止/依据或风险+主行动）；详情页三层 Token 化；**模块 7.5 合规过滤**：`src/lib/opportunities/list-view.ts` 把 `dataset==="real"`（AI 初核待人工复核）记录从 `closed` 拆出丢弃，`realMonitored` 保留为稳定类型但永远为空，详情页 `[unitId]/page.tsx` 对 `dataset==="real"` 提前返回 EmptyState；关注成功改为非阻塞 `StatusMessage`（`aria-live="polite"` + 撤销按钮 + 5s 自动消失，`FollowControls.tsx` 用 `prevFollowRef`/`mountedRef` 规避首次挂载误报）。
+- **阶段 D 行动与持续使用**：`/schedule` 首屏突出 `nextAction`（当前最重要的一个动作），`/study` 首屏只显示今天最重要的一项任务，`/me` 聚合画像/备考次级入口/纠错/通知/隐私；schedule/study/me/settings/materials/login 页面与 plans/governance/materials 子组件全部 Token 化；桌面导航在阶段 A 已收窄 Sidebar（`w-64→w-56`、删除常驻目标卡、移除装饰 Emoji），未切顶部导航（AppShell 与 Sidebar/Header/BottomNav/RequireAuth 耦合较多，一次切换高风险破坏行为，列为后续任务）。
+- **阶段 E 状态/无障碍/指标/收口**：各核心页面空/错/加载/成功/撤销状态已有覆盖（`LoadingPage`/`ErrorState`/`EmptyState`/`StatusMessage`）；响应式断点 32 文件使用 `sm:/md:/lg:`；`focus-visible:ring-brand` 在 Button/LinkButton/Hero/schedule nextAction 中使用；埋点字典 27 事件 + 8 补缺口事件完整登记；`.qa-harness/m9-p0-flow.mjs` 所有关键选择器（`start-onboarding` testid、`关注.*登录后保存` 链接、`查看优先机会的依据与下一步`、`关注（加入考虑中）`、`标记为准备报名`、`设为主要备考目标`）与本轮 DOM 结构同步；全量 Vitest 26 文件 205 passed | 2 skipped（2026-10-08 本机复测）。
+
+**本轮未做 / 后续任务**：后端用户端 API 加 `status` 过滤（当前仅前端兜底过滤 `real`）；桌面顶部导航切换；admin/Progress/Modal/Tabs/Switch/TaskCard/DemoBanner/RequireAuth/GapResourcePanel 等 22 个非主用户流程文件的 Token 化（不影响主用户流程，收口时按需补充）；真实受邀环境部署后补测。

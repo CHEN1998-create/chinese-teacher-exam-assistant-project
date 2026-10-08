@@ -32,10 +32,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
-  // 价值首页 / 快速问答 / 首次结果页：无导航外壳，未登录也可访问（v5.1 先体验后登录）
-  if (pathname === "/" || pathname === "/onboarding" || pathname === "/preview") {
+  // 价值首页 / 30 秒说明 / 快速问答 / 首次结果页：无导航外壳，未登录也可访问
+  // （v5.1 先体验后登录）
+  if (
+    pathname === "/" ||
+    pathname === "/learn" ||
+    pathname === "/onboarding" ||
+    pathname === "/preview"
+  ) {
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-canvas">
         <DemoBanner />
         <div className={DEMO_BANNER_SPACER_CLASS} />
         {children}
@@ -45,11 +51,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // 用户端常规页面
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-canvas">
       <DemoBanner />
       <Sidebar />
       <Header />
-      <main className="md:pl-64 pb-16 md:pb-0">
+      <main className="md:pl-56 pb-16 md:pb-0">
         <div className={DEMO_BANNER_SPACER_CLASS} />
         <div className="max-w-4xl mx-auto px-4 py-6 md:px-8">
           <RequireAuth>{children}</RequireAuth>

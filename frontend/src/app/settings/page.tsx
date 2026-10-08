@@ -57,15 +57,15 @@ export default function SettingsPage() {
       <Card>
         <CardHeader title="账号信息" description="当前登录会话与角色" />
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-full bg-brand-soft flex items-center justify-center shrink-0">
             <span className="text-xl">👤</span>
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <p className="font-medium text-slate-900">{user.name}</p>
+              <p className="font-medium text-ink">{user.name}</p>
               <Badge variant="primary">{USER_ROLE_LABELS[role]}</Badge>
             </div>
-            <p className="text-sm text-slate-500 mt-0.5">用户ID：{user.id}</p>
+            <p className="text-sm text-ink-muted mt-0.5">用户ID：{user.id}</p>
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
@@ -117,7 +117,7 @@ export default function SettingsPage() {
           />
         </div>
         <div className="mt-4 flex items-center justify-end gap-3">
-          {savedTip && <span className="text-sm text-emerald-600">已保存</span>}
+          {savedTip && <span className="text-sm text-success">已保存</span>}
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? "保存中..." : "保存设置"}
           </Button>
@@ -141,7 +141,7 @@ export default function SettingsPage() {
 
 /**
  * 重置演示数据：
- * 清空本浏览器 localStorage 中的全部业务键（含演示会话）并刷新页面，
+ * 清空本浏览器中的全部业务数据（含演示会话）并刷新页面，
  * 刷新后各服务重新播种默认演示数据。
  * 两步确认，避免误触。
  */
@@ -159,7 +159,7 @@ function ResetDemoDataCard() {
         title="重置演示数据"
         description="清除本浏览器中的全部操作记录与演示会话，恢复到默认演示状态"
       />
-      <p className="text-sm text-slate-600 mb-4">
+      <p className="text-sm text-ink-muted mb-4">
         该操作只影响当前浏览器：你创建的目标、提交的公告、资料、计划与反馈都会被清空，
         页面刷新后自动恢复内置演示数据。
       </p>
@@ -237,7 +237,7 @@ function AccountDangerZoneCard() {
       />
       <div className="space-y-4">
         <div>
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-ink-muted">
             删除测试数据会清空你的画像、关注、目标、计划与反馈，账号与登录状态保留。
           </p>
           {confirmTarget === "data" ? (
@@ -261,8 +261,8 @@ function AccountDangerZoneCard() {
           )}
         </div>
 
-        <div className="border-t border-slate-200 pt-4">
-          <p className="text-sm text-slate-600">
+        <div className="border-t border-line pt-4">
+          <p className="text-sm text-ink-muted">
             注销账号会永久删除你的账号及全部数据，且无法恢复。
           </p>
           {confirmTarget === "account" ? (
@@ -286,7 +286,7 @@ function AccountDangerZoneCard() {
           )}
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-danger">{error}</p>}
       </div>
     </Card>
   );

@@ -52,18 +52,18 @@ export default function MePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold text-slate-900">我的</h1>
+      <h1 className="text-xl font-bold text-ink">我的</h1>
 
       {/* 账号 */}
       <Card>
         <CardHeader title="账号信息" description="当前登录会话与角色" />
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+          <div className="w-12 h-12 rounded-full bg-brand-soft flex items-center justify-center shrink-0">
             <span className="text-xl">👤</span>
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <p className="font-medium text-slate-900">{user.name}</p>
+              <p className="font-medium text-ink">{user.name}</p>
               <Badge variant="primary">
                 {role === "admin"
                   ? "管理员"
@@ -74,7 +74,7 @@ export default function MePage() {
                       : "受邀用户"}
               </Badge>
             </div>
-            <p className="text-sm text-slate-500 mt-0.5 truncate">
+            <p className="text-sm text-ink-muted mt-0.5 truncate">
               用户ID：{user.id}
             </p>
           </div>
@@ -111,7 +111,7 @@ export default function MePage() {
           title="隐私与账号设置"
           description="数据类别说明、删除测试数据、注销账号与学习资料设置"
         />
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-line">
           <SettingsRow
             href="/settings"
             icon="🔒"
@@ -144,16 +144,16 @@ function SettingsRow({
   return (
     <Link
       href={href}
-      className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 hover:bg-slate-50/60 -mx-2 px-2 rounded-lg transition-colors"
+      className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 hover:bg-canvas/60 -mx-2 px-2 rounded-lg transition-colors"
     >
       <span className="text-lg" aria-hidden="true">
         {icon}
       </span>
       <span className="flex-1 min-w-0">
-        <span className="block text-sm font-medium text-slate-900">{title}</span>
-        <span className="block text-xs text-slate-500 mt-0.5">{description}</span>
+        <span className="block text-sm font-medium text-ink">{title}</span>
+        <span className="block text-xs text-ink-muted mt-0.5">{description}</span>
       </span>
-      <span className="text-slate-400" aria-hidden="true">
+      <span className="text-ink-muted" aria-hidden="true">
         ›
       </span>
     </Link>
@@ -186,7 +186,7 @@ function ProfileCard() {
   if (!loaded) {
     return (
       <Card>
-        <p className="text-sm text-slate-500">画像加载中…</p>
+        <p className="text-sm text-ink-muted">画像加载中…</p>
       </Card>
     );
   }
@@ -261,11 +261,11 @@ function ProfileCard() {
         title="我的画像"
         description="基础五组 + 按需补充；缺信息不会被判定为不符合"
       />
-      <dl className="divide-y divide-slate-100">
+      <dl className="divide-y divide-line">
         {rows.map((row) => (
           <div key={row.label} className="flex justify-between gap-4 py-2.5 text-sm">
-            <dt className="text-slate-500 shrink-0">{row.label}</dt>
-            <dd className="text-slate-900 text-right">{row.value}</dd>
+            <dt className="text-ink-muted shrink-0">{row.label}</dt>
+            <dd className="text-ink text-right">{row.value}</dd>
           </div>
         ))}
       </dl>
@@ -306,18 +306,18 @@ function StudyEntryCard() {
     <Card>
       <Link
         href="/study"
-        className="flex items-center gap-3 -m-1 p-3 rounded-lg hover:bg-slate-50 transition-colors"
+        className="flex items-center gap-3 -m-1 p-3 rounded-lg hover:bg-canvas transition-colors"
       >
         <span className="text-lg" aria-hidden="true">
           📚
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block text-sm font-medium text-slate-900">我的备考</span>
-          <span className="block text-xs text-slate-500 mt-0.5 truncate">
+          <span className="block text-sm font-medium text-ink">我的备考</span>
+          <span className="block text-xs text-ink-muted mt-0.5 truncate">
             {target ? `${target.unitName} · 备考计划与材料` : "备考计划与材料"}
           </span>
         </span>
-        <span className="text-slate-400" aria-hidden="true">
+        <span className="text-ink-muted" aria-hidden="true">
           ›
         </span>
       </Link>
@@ -352,26 +352,26 @@ function MyCorrectionsCard() {
         description="你在机会详情页提交的信息纠错及官方核对结果"
       />
       {items.length === 0 ? (
-        <p className="text-sm text-slate-500">还没有提交过纠错。</p>
+        <p className="text-sm text-ink-muted">还没有提交过纠错。</p>
       ) : (
         <ul className="space-y-3">
           {items.slice(0, 10).map((c) => (
-            <li key={c.id} className="rounded-lg border border-slate-200 p-3">
+            <li key={c.id} className="rounded-lg border border-line p-3">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium text-slate-900 truncate">
+                <p className="text-sm font-medium text-ink truncate">
                   {c.unitName ?? "岗位已随旧版本移除"} · {c.fieldLabel}
                 </p>
                 <Badge variant={CORRECTION_STATUS_META[c.status].variant}>
                   {CORRECTION_STATUS_META[c.status].label}
                 </Badge>
               </div>
-              <p className="mt-1 text-xs text-slate-600 line-clamp-2">{c.content}</p>
+              <p className="mt-1 text-xs text-ink-muted line-clamp-2">{c.content}</p>
               {c.reviewNote && (
-                <p className="mt-1.5 rounded bg-slate-50 px-2 py-1 text-xs text-slate-600 whitespace-pre-line">
+                <p className="mt-1.5 rounded bg-canvas px-2 py-1 text-xs text-ink-muted whitespace-pre-line">
                   处理说明：{c.reviewNote}
                 </p>
               )}
-              <p className="mt-1 text-[11px] text-slate-400">
+              <p className="mt-1 text-[11px] text-ink-muted">
                 提交于 {formatDateTime(c.createdAt)}
                 {c.reviewedAt ? ` · 处理于 ${formatDateTime(c.reviewedAt)}` : ""}
               </p>

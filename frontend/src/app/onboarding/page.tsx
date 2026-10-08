@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Disclosure } from "@/components/ui/Disclosure";
+import { StatusMessage, StatusMessageRegion } from "@/components/ui/StatusMessage";
 import { useCurrentUser, AUTH_MODE } from "@/lib/auth";
 import {
   CITY_OPTIONS,
@@ -28,7 +30,6 @@ import {
   stepHasContent,
   type GuestProfileDraft,
 } from "@/lib/guest/guestSession";
-import { GUEST_COVERAGE } from "@/lib/guest/coverage";
 import { profileApi } from "@/lib/profile/profileApi";
 import { track, trackOncePerUser } from "@/lib/analytics/eventService";
 import type { EmploymentNatureCode, SubjectCode } from "@/lib/announcements/types";
@@ -65,12 +66,6 @@ const STEP_TITLES = [
   "你的教师资格情况？",
 ];
 
-function formatCheckedDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
-}
-
 export default function OnboardingPage() {
   const router = useRouter();
   const { status } = useCurrentUser();
@@ -96,6 +91,12 @@ export default function OnboardingPage() {
 
   // 本机存储写入失败提示（输入仍保留在 draft 状态中，不会丢失）
   const [saveError, setSaveError] = useState(false);
+
+  // 完成一组后的非阻塞即时反馈（模块 0A 第七节）
+  const [recentFeedback, setRecentFeedback] = useState<{
+    tone: "success" | "info" | "warn" | "danger";
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -146,6 +147,10 @@ export default function OnboardingPage() {
       });
       router.push("/preview");
     } else {
+      setRecentFeedback({
+        tone: "success",
+        message: `第 ${finishedStep} 组已保存，继续填写下一组。`,
+      });
       setView(finishedStep + 1);
     }
   };
@@ -180,6 +185,10 @@ export default function OnboardingPage() {
       });
       router.push("/preview");
     } else {
+      setRecentFeedback({
+        tone: "info",
+        message: `已暂不提供第 ${view} 组；结果会标注限制，不会判不符合。`,
+      });
       setView(view + 1);
     }
   };
@@ -199,32 +208,36 @@ export default function OnboardingPage() {
   const limitations = buildProfileLimitations(draft);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-slate-50">
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-4 gap-2">
-          <Link href="/" className="text-sm text-slate-500 hover:text-slate-700">
-            ← 返回首页
+    <div className="min-h-screen bg-canvas">
+      <div className="mx-auto w-full max-w-xl px-4 py-6">
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink"
+          >
+            <svg
+              aria-hidden="true"
+              className="h-4 w-4"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414L6 10l5.293-5.293a1 1 0 011.414 0z" />
+            </svg>
+            返回首页
           </Link>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-ink-muted">
             第 {view} 组，共 {TOTAL_PROFILE_STEPS} 组
           </span>
         </div>
 
-        {/* 当前真实监测范围（一行事实，与首页同一数据源） */}
-        <p className="mb-5 rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs leading-relaxed text-emerald-900">
-          当前仅监测浙江杭州、宁波的<strong>语文教师</strong>官方招聘渠道，最近核对
-          {formatCheckedDate(GUEST_COVERAGE.lastCheckedAt)}，在报 {GUEST_COVERAGE.openOpportunityCount} 个；
-          暂未收录其他城市不等于没有招聘。
-        </p>
-
-        {/* 进度条：蓝色=已完成，琥珀色=已选择暂不提供 */}
+        {/* 进度条：墨蓝=已完成，琥珀=已选暂不提供，灰=未到达 */}
         <div
-          className="flex gap-2 mb-6"
+          className="mb-6 flex gap-2"
           role="progressbar"
           aria-valuemin={1}
           aria-valuemax={TOTAL_PROFILE_STEPS}
           aria-valuenow={view}
-          aria-label={`基础画像填写进度：第 ${view} 组，共 ${TOTAL_PROFILE_STEPS} 组`}
+          aria-label={`报考信息填写进度：第 ${view} 组，共 ${TOTAL_PROFILE_STEPS} 组`}
         >
           {Array.from({ length: TOTAL_PROFILE_STEPS }).map((_, i) => {
             const stepNo = i + 1;
@@ -235,10 +248,10 @@ export default function OnboardingPage() {
                 title={isSkipped ? `第 ${stepNo} 组：暂不提供` : undefined}
                 className={`h-1.5 flex-1 rounded-full transition-colors ${
                   isSkipped
-                    ? "bg-amber-400"
+                    ? "bg-warn"
                     : i < view
-                      ? "bg-blue-500"
-                      : "bg-slate-200"
+                      ? "bg-brand"
+                      : "bg-line"
                 }`}
               />
             );
@@ -246,23 +259,33 @@ export default function OnboardingPage() {
         </div>
 
         <Card>
-          <h1 className="text-lg font-bold text-slate-900 mb-1">{STEP_TITLES[view - 1]}</h1>
-          {/* 资料用途：每组都先说清「这条信息用来做什么」 */}
-          <p className="text-sm text-slate-500 leading-relaxed">{STEP_PURPOSE[view]}</p>
+          <h1 className="mb-1 text-lg font-bold text-ink">{STEP_TITLES[view - 1]}</h1>
+          {/* 短提示：每组只先说一句"这条信息用来做什么" */}
+          <p className="text-sm leading-relaxed text-ink-muted">{STEP_PURPOSE[view]}</p>
+
+          {/* "为什么问这个？"长解释按需展开（模块 0A 第七节） */}
+          <div className="mt-3">
+            <Disclosure
+              trigger="为什么问这个？"
+              contentClassName="text-sm leading-relaxed text-ink-muted"
+            >
+              {STEP_SKIP_COPY[view].confirm}
+            </Disclosure>
+          </div>
 
           {/* 已选择暂不提供：明确结果限制，一键返回补填 */}
           {skippedHere && (
             <div
-              className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5"
+              className="mt-4 rounded-lg border border-warn/30 bg-warn-soft px-3 py-2.5"
               data-testid={`skipped-banner-${view}`}
             >
-              <p className="text-sm text-amber-900">
+              <p className="text-sm text-warn">
                 已选择「暂不提供」这一组。{STEP_SKIP_COPY[view].confirm}
               </p>
               <button
                 type="button"
                 onClick={undoSkip}
-                className="mt-1.5 text-sm font-medium text-amber-800 underline underline-offset-2 hover:text-amber-900"
+                className="mt-1.5 text-sm font-medium text-warn underline underline-offset-2 hover:text-warn/80"
               >
                 现在补上这一组
               </button>
@@ -294,19 +317,19 @@ export default function OnboardingPage() {
 
           {/* 最后一步：汇总暂未提供项及其对结果的限制 */}
           {view === TOTAL_PROFILE_STEPS && limitations.length > 0 && (
-            <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-3">
-              <p className="text-sm font-medium text-amber-900">
+            <div className="mt-5 rounded-lg border border-warn/30 bg-warn-soft px-3 py-3">
+              <p className="text-sm font-medium text-warn">
                 有 {limitations.length} 项信息你暂未提供，结果会这样受限：
               </p>
               <ul className="mt-1.5 list-disc pl-5 space-y-1">
                 {limitations.map((item) => (
-                  <li key={item.step} className="text-xs leading-relaxed text-amber-800">
+                  <li key={item.step} className="text-xs leading-relaxed text-warn">
                     <span className="font-medium">{item.label}：</span>
                     {item.impact}
                   </li>
                 ))}
               </ul>
-              <p className="mt-2 text-xs text-amber-800">
+              <p className="mt-2 text-xs text-warn">
                 这些都不是「不符合」；补填后结论会自动更新，也可现在返回修改。
               </p>
             </div>
@@ -315,7 +338,7 @@ export default function OnboardingPage() {
           {/* 写入失败：不跳转、不丢输入，提示重试 */}
           {saveError && (
             <div
-              className="mt-5 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-800"
+              className="mt-5 rounded-lg border border-danger/30 bg-danger-soft px-3 py-2.5 text-sm text-danger"
               data-testid="save-error"
               role="alert"
             >
@@ -333,23 +356,23 @@ export default function OnboardingPage() {
 
           <div className="mt-6">
             <Button onClick={goNext} disabled={!canContinue} size="lg" fullWidth>
-              {view >= TOTAL_PROFILE_STEPS ? "查看初步匹配结果" : "下一步"}
+              {view >= TOTAL_PROFILE_STEPS ? "查看初步匹配结果" : "继续核对下一项"}
             </Button>
             {!canContinue && (
-              <p className="text-xs text-slate-400 text-center mt-2">
+              <p className="mt-2 text-center text-xs text-ink-muted">
                 完成本页问题后继续；如果暂时不确定，也可以选择下方「暂不提供」
               </p>
             )}
           </div>
 
-          {/* 暂不确定 / 暂不提供：仅在本组没有任何实质内容时出现，避免与已填答案矛盾 */}
+          {/* 暂不提供：低强调文字操作（模块 0A 第六节），仅在本组无实质内容时出现 */}
           {!skippedHere && !hasContentHere && (
             <button
               type="button"
               onClick={skipCurrentStep}
-              className="mt-3 w-full rounded-lg border border-dashed border-slate-300 px-3 py-2.5 text-sm text-slate-500 transition-colors hover:border-amber-300 hover:text-amber-800"
+              className="mt-3 w-full text-sm text-ink-muted underline-offset-4 hover:text-ink hover:underline"
             >
-              {STEP_SKIP_COPY[view].action}（结果会标注限制，不会判不符合）
+              {STEP_SKIP_COPY[view].action}
             </button>
           )}
         </Card>
@@ -359,19 +382,31 @@ export default function OnboardingPage() {
             <button
               type="button"
               onClick={goBack}
-              className="text-sm text-slate-500 hover:text-slate-700"
+              className="text-sm text-ink-muted hover:text-ink"
             >
               ← 返回上一组修改
             </button>
           </div>
         )}
 
-        <p className="text-center text-xs text-slate-400 mt-6 leading-relaxed">
-          当前输入仅保存在本机浏览器（7 天有效），不会上传到服务器；可随时返回修改。
-          <Link href="/login" className="text-blue-600 hover:underline ml-1">
+        <p className="mt-6 text-center text-xs leading-relaxed text-ink-muted">
+          当前输入仅保存在这台设备（7 天有效），不会上传到服务器；可随时返回修改。
+          <Link href="/login" className="ml-1 text-brand hover:underline">
             已有账号？直接登录
           </Link>
         </p>
+
+        {/* 完成一组后的非阻塞即时反馈 */}
+        <StatusMessageRegion>
+          {recentFeedback && (
+            <StatusMessage
+              tone={recentFeedback.tone}
+              message={recentFeedback.message}
+              duration={3000}
+              onDismiss={() => setRecentFeedback(null)}
+            />
+          )}
+        </StatusMessageRegion>
       </div>
     </div>
   );

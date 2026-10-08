@@ -46,7 +46,7 @@ export function Header() {
 
   return (
     <header
-      className={`sticky top-0 z-40 border-b border-slate-200 bg-white md:hidden ${
+      className={`sticky top-0 z-40 border-b border-line bg-surface md:hidden ${
         // 演示模式：移动端为两行高的横幅让出空间
         isDemoMode ? "top-11" : "top-0"
       }`}
@@ -58,18 +58,18 @@ export function Header() {
               type="button"
               onClick={() => window.history.back()}
               aria-label="返回上一页"
-              className="-ml-1 p-1 text-slate-600 hover:text-slate-900"
+              className="-ml-1 p-1 text-ink-muted hover:text-ink"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
           )}
-          <h1 className="truncate text-lg font-semibold text-slate-900">{title}</h1>
+          <h1 className="truncate text-lg font-semibold text-ink">{title}</h1>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {ready && summary && (
-            <span className="max-w-[140px] truncate text-xs text-slate-500">{summary}</span>
+            <span className="max-w-[140px] truncate text-xs text-ink-muted">{summary}</span>
           )}
           {ready && <NotificationCenter />}
         </div>

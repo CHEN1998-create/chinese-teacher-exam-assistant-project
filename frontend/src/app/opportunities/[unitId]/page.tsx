@@ -163,6 +163,21 @@ export default function OpportunityDetailPage() {
   }
 
   const unit = detail.unit;
+  // 模块 7.5 合规过滤：用户端不展示 AI 初核待人工复核记录（dataset === "real"）。
+  // 列表已不输出 real；用户直接访问详情 URL 时同样退出，显示"尚未正式发布"。
+  // 真正解决需后端 unitDetail() 加 status 过滤（见最终报告"后续任务"）。
+  if (unit.announcement.dataset === "real") {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <EmptyState
+          title="该机会尚未正式发布"
+          description="这条记录仍在人工复核中，暂不向用户端展示。可以稍后查看，或返回机会列表浏览其他已发布机会。"
+          actionLabel="返回机会列表"
+          actionHref="/opportunities"
+        />
+      </div>
+    );
+  }
   const groups = groupDimensions(unit.dimensions);
   const primaryClosedGate = primaryGate(unit.gates);
   const gateViews = failedGateViews(unit.gates);
@@ -370,10 +385,10 @@ export default function OpportunityDetailPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 pb-4">
-      <nav className="text-xs text-slate-500">
+      <nav className="text-xs text-ink-muted">
         <Link
           href="/opportunities"
-          className="underline underline-offset-2 hover:text-blue-700"
+          className="underline underline-offset-2 hover:text-brand"
         >
           ← 返回机会列表
         </Link>
@@ -382,7 +397,7 @@ export default function OpportunityDetailPage() {
       {/* 标题区（报考单元基础事实） */}
       <header className="space-y-1.5">
         <div className="flex items-start justify-between gap-3">
-          <h1 className="text-lg font-semibold leading-snug text-slate-900">
+          <h1 className="text-lg font-semibold leading-snug text-ink">
             {unit.unit.name}
           </h1>
           {primaryClosedGate ? (
@@ -391,23 +406,19 @@ export default function OpportunityDetailPage() {
             <MatchStatusTag status={unit.overall} />
           )}
         </div>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-ink-muted">
           {regionLabel(unit.unit.region)} ·{" "}
           {unit.unit.employmentNature.officialName}（
           {natureShortLabel(unit.unit.employmentNature.code as never)}） ·{" "}
           {stageLabel(unit.unit.stage)} · 招 {unit.unit.headcount} 人
         </p>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-ink-muted">
           {unit.announcement.publisher} · 报名
           {closed ? "" : deadline.text}
         </p>
-        {unit.announcement.dataset === "real" && (
-          <p className="text-xs text-amber-700">
-            真实监测记录 · AI 初核待人工复核，不作为正式推荐依据
-          </p>
-        )}
+        {/* 模块 7.5：dataset === "real" 已在加载后 early return，此处不再渲染提示 */}
         {unit.follow?.newerVersion && (
-          <p className="rounded-lg bg-amber-50 px-3 py-1.5 text-xs text-amber-700">
+          <p className="rounded-lg bg-warn-soft px-3 py-1.5 text-xs text-warn">
             你关注时依据的公告版本已有更新，当前展示的是最新已发布版本。
           </p>
         )}
@@ -424,14 +435,14 @@ export default function OpportunityDetailPage() {
         action={busy ? { ...heroAction, disabled: true, label: "处理中…" } : heroAction}
       >
         {closed && (
-          <div className="space-y-1.5 rounded-lg border border-red-100 bg-red-50/60 p-2.5">
-            <p className="text-xs font-semibold text-red-700">
+          <div className="space-y-1.5 rounded-lg border border-danger/30 bg-danger-soft/60 p-2.5">
+            <p className="text-xs font-semibold text-danger">
               不进入推荐的原因（历史留档已保留，不会当作资格不符合）
             </p>
-            <ul className="space-y-1 text-sm text-slate-600">
+            <ul className="space-y-1 text-sm text-ink-muted">
               {gateViews.map(({ gate, meta }) => (
                 <li key={gate.code}>
-                  <span className="font-medium text-slate-700">· {meta.label}：</span>
+                  <span className="font-medium text-ink">· {meta.label}：</span>
                   {gate.reason}
                 </li>
               ))}
@@ -443,7 +454,7 @@ export default function OpportunityDetailPage() {
       {actionError && (
         <p
           role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
         >
           {actionError}
         </p>
@@ -451,7 +462,7 @@ export default function OpportunityDetailPage() {
       {correctionDone && (
         <p
           role="status"
-          className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"
+          className="rounded-lg border border-success/30 bg-success-soft px-3 py-2 text-sm text-success"
         >
           纠错已提交并留痕，我们会核对官方原文；如需更正将通过新版本发布，不会直接改动结论。
         </p>
@@ -460,10 +471,10 @@ export default function OpportunityDetailPage() {
       {/* 第二段：关键依据与不确定项（官方事实 vs 系统预筛判断分行展示） */}
       <section className="space-y-4">
         <div>
-          <h2 className="text-base font-semibold text-slate-900">
+          <h2 className="text-base font-semibold text-ink">
             关键依据与不确定项
           </h2>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p className="mt-0.5 text-xs text-ink-muted">
             每条都分「公告怎么写（官方事实）」与「系统预筛判断」；缺少信息不是不符合，向招聘单位确认前系统不自动下结论。
           </p>
         </div>
@@ -471,9 +482,9 @@ export default function OpportunityDetailPage() {
         {groups.missingInfo.length > 0 && (
           <div
             id="missing-info"
-            className="scroll-mt-20 rounded-xl border border-amber-200 bg-white"
+            className="scroll-mt-20 rounded-xl border border-warn/30 bg-surface"
           >
-            <div className="border-b border-amber-100 px-4 py-2.5">
+            <div className="border-b border-warn/30 px-4 py-2.5">
               <LayerHeading
                 title="需要补充的信息（补充后重新判断，不是不符合）"
                 count={groups.missingInfo.length}
@@ -488,9 +499,9 @@ export default function OpportunityDetailPage() {
         {groups.confirmOfficial.length > 0 && (
           <div
             id="to-confirm"
-            className="scroll-mt-20 rounded-xl border border-amber-200 bg-white"
+            className="scroll-mt-20 rounded-xl border border-warn/30 bg-surface"
           >
-            <div className="border-b border-amber-100 px-4 py-2.5">
+            <div className="border-b border-warn/30 px-4 py-2.5">
               <LayerHeading
                 title="需要向招聘单位确认的歧义项（系统不能自动判定）"
                 count={groups.confirmOfficial.length}
@@ -508,9 +519,9 @@ export default function OpportunityDetailPage() {
         {groups.unsatisfied.length > 0 && (
           <div
             id="unsatisfied"
-            className="scroll-mt-20 rounded-xl border border-red-200 bg-white"
+            className="scroll-mt-20 rounded-xl border border-danger/30 bg-surface"
           >
-            <div className="border-b border-red-100 px-4 py-2.5">
+            <div className="border-b border-danger/30 px-4 py-2.5">
               <LayerHeading title="明确不符合项（依据公告原文）" count={groups.unsatisfied.length} />
             </div>
             <div className="px-4 py-2">
@@ -545,12 +556,12 @@ export default function OpportunityDetailPage() {
       {unit.follow && unit.unit.materials && unit.unit.materials.length > 0 && (
         <section className="space-y-3">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">报名材料清单</h2>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <h2 className="text-base font-semibold text-ink">报名材料清单</h2>
+            <p className="mt-0.5 text-xs text-ink-muted">
               按公告要求生成；每项可追溯到官方来源。只记录准备进度，不采集证件号码或扫描件。
             </p>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-white px-4">
+          <div className="rounded-xl border border-line bg-surface px-4">
             <MaterialsList
               materials={unit.unit.materials}
               statuses={unit.follow.materialStatuses}
@@ -567,12 +578,12 @@ export default function OpportunityDetailPage() {
       {unit.follow && unit.consultationTemplates && (
         <section className="space-y-3">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">官方咨询</h2>
-            <p className="mt-0.5 text-xs text-slate-500">
+            <h2 className="text-base font-semibold text-ink">官方咨询</h2>
+            <p className="mt-0.5 text-xs text-ink-muted">
               复制问题向招聘单位确认；你记录的结论仅自己可见，不会变成官方事实或影响匹配。
             </p>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <div className="rounded-xl border border-line bg-surface p-4">
             <ConsultationPanel
               templates={unit.consultationTemplates}
               contact={{

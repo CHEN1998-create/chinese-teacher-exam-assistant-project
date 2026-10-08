@@ -20,13 +20,13 @@ interface BadgeProps {
 }
 
 const variantStyles: Record<string, string> = {
-  default: "bg-gray-100 text-gray-700",
-  primary: "bg-blue-50 text-blue-700",
-  success: "bg-emerald-50 text-emerald-700",
-  warning: "bg-amber-50 text-amber-700",
-  danger: "bg-red-50 text-red-700",
-  info: "bg-cyan-50 text-cyan-700",
-  muted: "bg-slate-100 text-slate-600",
+  default: "bg-brand-soft/60 text-ink",
+  primary: "bg-brand-soft text-brand",
+  success: "bg-success-soft text-success",
+  warning: "bg-warn-soft text-warn",
+  danger: "bg-danger-soft text-danger",
+  info: "bg-brand-soft text-brand",
+  muted: "bg-brand-soft/40 text-ink-muted",
 };
 
 export function Badge({ variant = "default", children, className }: BadgeProps) {

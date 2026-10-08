@@ -21,13 +21,13 @@ const SOURCE_KIND_LABELS: Record<string, string> = {
 
 function EvidenceLink({ url }: { url?: string }) {
   const link = safeOfficialLink(url);
-  if (!link) return <span className="text-slate-400">虚构示例，无可访问的官方原文</span>;
+  if (!link) return <span className="text-ink-muted">虚构示例，无可访问的官方原文</span>;
   return (
     <a
       href={link}
       target="_blank"
       rel="noopener noreferrer"
-      className="break-all text-blue-700 underline underline-offset-2"
+      className="break-all text-brand underline underline-offset-2"
     >
       打开官方原文（新窗口）
     </a>
@@ -51,12 +51,12 @@ export function OfficialSourceSection({
 
   return (
     <section className="space-y-3">
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <h3 className="text-sm font-semibold text-slate-800">
+      <div className="rounded-xl border border-line bg-surface p-4">
+        <h3 className="text-sm font-semibold text-ink">
           {isDemo ? "示例公告与岗位表位置" : "官方原文与岗位表位置"}
         </h3>
-        {isDemo && <p className="mt-1 text-xs font-medium text-amber-700">以下内容和日期均为虚构演示，不代表官方招聘信息。</p>}
-        <p className="mt-0.5 text-xs text-slate-500">
+        {isDemo && <p className="mt-1 text-xs font-medium text-warn">以下内容和日期均为虚构演示，不代表官方招聘信息。</p>}
+        <p className="mt-0.5 text-xs text-ink-muted">
           当前依据：
           {SOURCE_KIND_LABELS[unit.version.sourceKind] ??
             unit.version.sourceKind}{" "}
@@ -65,15 +65,15 @@ export function OfficialSourceSection({
           {unit.announcement.publisher}
         </p>
 
-        <dl className="mt-3 space-y-2 text-xs text-slate-600">
+        <dl className="mt-3 space-y-2 text-xs text-ink-muted">
           <div>
-            <dt className="font-medium text-slate-500">{isDemo ? "示例来源" : "官方来源"}</dt>
+            <dt className="font-medium text-ink-muted">{isDemo ? "示例来源" : "官方来源"}</dt>
             <dd className="mt-0.5">
               <EvidenceLink url={source.locator.url} />
             </dd>
           </div>
           <div className="flex gap-2">
-            <dt className="shrink-0 font-medium text-slate-500">{isDemo ? "示例报名时间" : "报名时间（公告口径）"}</dt>
+            <dt className="shrink-0 font-medium text-ink-muted">{isDemo ? "示例报名时间" : "报名时间（公告口径）"}</dt>
             <dd>
               {unit.version.timeline.registrationStart &&
               unit.version.timeline.registrationEnd
@@ -83,33 +83,33 @@ export function OfficialSourceSection({
           </div>
           {unit.version.timeline.writtenExamDate && (
             <div className="flex gap-2">
-              <dt className="shrink-0 font-medium text-slate-500">笔试时间</dt>
+              <dt className="shrink-0 font-medium text-ink-muted">笔试时间</dt>
               <dd>{unit.version.timeline.writtenExamDate}</dd>
             </div>
           )}
           {unit.version.timeline.pendingItems?.map((item) => (
-            <div key={item} className="text-slate-500">
+            <div key={item} className="text-ink-muted">
               {isDemo ? "示例待定：" : "待官方明确："}{item}
             </div>
           ))}
         </dl>
 
         {unit.unit.sourceRow && (
-          <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold text-slate-700">
+          <div className="mt-3 rounded-lg border border-line bg-canvas p-3">
+            <p className="text-xs font-semibold text-ink">
               岗位表位置（行级锚点）
             </p>
-            <p className="mt-1 text-xs text-slate-600">
+            <p className="mt-1 text-xs text-ink-muted">
               {unit.unit.sourceRow.locator.anchor ??
                 unit.unit.sourceRow.locator.sheet ??
                 "官方岗位表附件"}
             </p>
             {unit.unit.sourceRow.excerpt && (
-              <p className="mt-1 border-l-2 border-slate-200 pl-2 text-xs text-slate-500">
+              <p className="mt-1 border-l-2 border-line pl-2 text-xs text-ink-muted">
                 “{unit.unit.sourceRow.excerpt}”
               </p>
             )}
-            <p className="mt-1.5 text-[11px] text-slate-400">
+            <p className="mt-1.5 text-[11px] text-ink-muted">
               <EvidenceLink url={unit.unit.sourceRow.locator.url} />
             </p>
           </div>
@@ -121,9 +121,9 @@ export function OfficialSourceSection({
           {evidences.map((dim) => (
             <li
               key={dim.requirementId}
-              className="rounded-lg border border-slate-100 p-3"
+              className="rounded-lg border border-line p-3"
             >
-              <p className="text-xs font-semibold text-slate-700">
+              <p className="text-xs font-semibold text-ink">
                 {dim.dimension === "region"
                   ? "就业地区"
                   : dimensionLabel(dim.dimension)}
@@ -132,11 +132,11 @@ export function OfficialSourceSection({
                   : ""}
               </p>
               {dim.evidence?.excerpt && (
-                <p className="mt-1 border-l-2 border-slate-200 pl-2 text-xs text-slate-500">
+                <p className="mt-1 border-l-2 border-line pl-2 text-xs text-ink-muted">
                   “{dim.evidence.excerpt}”
                 </p>
               )}
-              <p className="mt-1.5 text-[11px] text-slate-400">
+              <p className="mt-1.5 text-[11px] text-ink-muted">
                 <EvidenceLink url={dim.evidence?.locator.url} />
               </p>
             </li>
@@ -165,9 +165,9 @@ export function VerificationSection({
 
   return (
     <section className="space-y-3">
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="rounded-xl border border-line bg-surface p-4">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-sm font-semibold text-slate-800">
+          <h3 className="text-sm font-semibold text-ink">
             核对时间与变化
           </h3>
           <Button size="sm" variant="outline" onClick={onOpenCorrection}>
@@ -176,14 +176,14 @@ export function VerificationSection({
         </div>
 
         {unit.version.changeNote && (
-          <p className="mt-2 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-800">
+          <p className="mt-2 rounded-lg bg-brand-soft px-3 py-2 text-xs text-brand-strong">
             本次版本变化：{unit.version.changeNote}
           </p>
         )}
 
-        <dl className="mt-3 space-y-2 text-xs text-slate-600">
+        <dl className="mt-3 space-y-2 text-xs text-ink-muted">
           <div className="flex gap-2">
-            <dt className="shrink-0 font-medium text-slate-500">{isDemo ? "示例来源" : "官方来源核对"}</dt>
+            <dt className="shrink-0 font-medium text-ink-muted">{isDemo ? "示例来源" : "官方来源核对"}</dt>
             <dd>
               {isDemo
                 ? "虚构演示，未核对真实公告"
@@ -194,7 +194,7 @@ export function VerificationSection({
             </dd>
           </div>
           <div className="flex gap-2">
-            <dt className="shrink-0 font-medium text-slate-500">人工复核</dt>
+            <dt className="shrink-0 font-medium text-ink-muted">人工复核</dt>
             <dd>
               {isDemo
                 ? "不适用（虚构示例）"
@@ -214,20 +214,20 @@ export function VerificationSection({
 
       {previousVersions.length > 0 && (
         <Disclosure title="历史版本" count={previousVersions.length}>
-          <ul className="space-y-2 text-xs text-slate-500">
+          <ul className="space-y-2 text-xs text-ink-muted">
             {previousVersions.map((v) => (
-              <li key={v.id} className="rounded-lg bg-slate-50 p-2.5">
+              <li key={v.id} className="rounded-lg bg-canvas p-2.5">
                 <p>
                   {SOURCE_KIND_LABELS[v.sourceKind] ?? v.sourceKind} v
                   {v.versionNumber} · {formatDateTime(v.publishedAt)}
                   {v.supersededAt && (
-                    <span className="ml-2 text-slate-400">
+                    <span className="ml-2 text-ink-muted">
                       已于 {formatDateTime(v.supersededAt)} 被新版本取代
                     </span>
                   )}
                 </p>
                 {v.changeNote && (
-                  <p className="mt-1 text-slate-500">说明：{v.changeNote}</p>
+                  <p className="mt-1 text-ink-muted">说明：{v.changeNote}</p>
                 )}
               </li>
             ))}
@@ -235,7 +235,7 @@ export function VerificationSection({
         </Disclosure>
       )}
 
-      <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-400">
+      <p className="rounded-lg bg-canvas px-3 py-2 text-[11px] leading-relaxed text-ink-muted">
         本结论由规则版本 {meta.ruleVersion}、专业别名表{" "}
         {meta.majorAliasVersion}、公告目录 {meta.catalogVersion} 与真实监测台账{" "}
         {meta.realCatalogVersion} 于 {formatDateTime(meta.evaluatedAt)} 计算；

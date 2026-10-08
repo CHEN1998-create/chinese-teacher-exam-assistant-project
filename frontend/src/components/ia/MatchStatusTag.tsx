@@ -13,26 +13,26 @@ const STATUS_META: Record<
   preliminary_eligible: {
     text: "初步符合",
     symbol: "✓",
-    dotClass: "bg-blue-600",
-    textClass: "text-blue-700",
+    dotClass: "bg-brand",
+    textClass: "text-brand",
   },
   need_more_info: {
     text: "补充信息后判断",
     symbol: "?",
-    dotClass: "bg-amber-500",
-    textClass: "text-amber-700",
+    dotClass: "bg-warn",
+    textClass: "text-warn",
   },
   manual_review: {
     text: "建议人工确认",
     symbol: "!",
-    dotClass: "bg-amber-500",
-    textClass: "text-amber-700",
+    dotClass: "bg-warn",
+    textClass: "text-warn",
   },
   not_eligible: {
     text: "明确不符合",
     symbol: "×",
-    dotClass: "bg-red-500",
-    textClass: "text-red-700",
+    dotClass: "bg-danger",
+    textClass: "text-danger",
   },
 };
 
@@ -66,18 +66,18 @@ const TONE_META: Record<
 > = {
   neutral: {
     symbol: "−",
-    dotClass: "bg-slate-400",
-    textClass: "text-slate-600",
+    dotClass: "bg-ink-muted",
+    textClass: "text-ink-muted",
   },
   warning: {
     symbol: "!",
-    dotClass: "bg-amber-500",
-    textClass: "text-amber-700",
+    dotClass: "bg-warn",
+    textClass: "text-warn",
   },
   danger: {
     symbol: "!",
-    dotClass: "bg-red-500",
-    textClass: "text-red-700",
+    dotClass: "bg-danger",
+    textClass: "text-danger",
   },
 };
 

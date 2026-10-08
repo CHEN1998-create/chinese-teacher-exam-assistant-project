@@ -22,7 +22,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-medium text-slate-700 mb-1.5"
+            className="block text-sm font-medium text-ink mb-1.5"
           >
             {label}
           </label>
@@ -31,17 +31,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={cn(
-            "w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400",
-            "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-            "disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed",
-            error && "border-red-500 focus:ring-red-500",
+            "w-full h-11 px-3 rounded-lg border border-line bg-surface text-sm text-ink placeholder:text-ink-muted/70",
+            "focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent",
+            "disabled:bg-canvas disabled:text-ink-muted disabled:cursor-not-allowed",
+            error && "border-danger focus:ring-danger",
             className
           )}
+          aria-invalid={error ? true : undefined}
           {...props}
         />
-        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-1 text-sm text-danger">{error}</p>}
         {hint && !error && (
-          <p className="mt-1 text-sm text-slate-500">{hint}</p>
+          <p className="mt-1 text-sm text-ink-muted">{hint}</p>
         )}
       </div>
     );
@@ -66,7 +67,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         {label && (
           <label
             htmlFor={selectId}
-            className="block text-sm font-medium text-slate-700 mb-1.5"
+            className="block text-sm font-medium text-ink mb-1.5"
           >
             {label}
           </label>
@@ -75,12 +76,13 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={selectId}
           className={cn(
-            "w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-sm text-slate-900",
-            "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-            "disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed",
-            error && "border-red-500 focus:ring-red-500",
+            "w-full h-11 px-3 rounded-lg border border-line bg-surface text-sm text-ink",
+            "focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent",
+            "disabled:bg-canvas disabled:text-ink-muted disabled:cursor-not-allowed",
+            error && "border-danger focus:ring-danger",
             className
           )}
+          aria-invalid={error ? true : undefined}
           {...props}
         >
           {placeholder && (
@@ -94,7 +96,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             </option>
           ))}
         </select>
-        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-1 text-sm text-danger">{error}</p>}
       </div>
     );
   }
@@ -116,7 +118,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label
             htmlFor={areaId}
-            className="block text-sm font-medium text-slate-700 mb-1.5"
+            className="block text-sm font-medium text-ink mb-1.5"
           >
             {label}
           </label>
@@ -125,15 +127,16 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={areaId}
           className={cn(
-            "w-full min-h-[100px] px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400",
-            "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-            "disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed",
-            error && "border-red-500 focus:ring-red-500",
+            "w-full min-h-[100px] px-3 py-2 rounded-lg border border-line bg-surface text-sm text-ink placeholder:text-ink-muted/70",
+            "focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent",
+            "disabled:bg-canvas disabled:text-ink-muted disabled:cursor-not-allowed",
+            error && "border-danger focus:ring-danger",
             className
           )}
+          aria-invalid={error ? true : undefined}
           {...props}
         />
-        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-1 text-sm text-danger">{error}</p>}
       </div>
     );
   }

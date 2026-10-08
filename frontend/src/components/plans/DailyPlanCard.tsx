@@ -38,29 +38,29 @@ export function DailyPlanCard({ plan, onAdjustTime }: DailyPlanCardProps) {
           <div
             className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center ${
               allDone
-                ? "bg-emerald-100"
+                ? "bg-success-soft"
                 : isToday
-                  ? "bg-blue-100"
-                  : "bg-slate-100"
+                  ? "bg-brand-soft"
+                  : "bg-canvas"
             }`}
           >
-            <span className="text-[10px] text-slate-500">
+            <span className="text-[10px] text-ink-muted">
               {getWeekdayName(plan.dayOfWeek)}
             </span>
             <span
               className={`text-lg font-bold ${
-                allDone ? "text-emerald-700" : isToday ? "text-blue-700" : "text-slate-700"
+                allDone ? "text-success" : isToday ? "text-brand" : "text-ink"
               }`}
             >
               {plan.date.split("-")[2]}
             </span>
           </div>
           <div>
-            <p className="font-medium text-slate-900">
+            <p className="font-medium text-ink">
               {plan.tasks.length} 项任务
-              {isToday && <span className="ml-2 text-blue-600 text-sm">今天</span>}
+              {isToday && <span className="ml-2 text-brand text-sm">今天</span>}
             </p>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-ink-muted">
               预计 {formatTime(plan.totalEstimatedTime)} / 可用{" "}
               {formatTime(plan.availableMinutes)}
             </p>
@@ -72,7 +72,7 @@ export function DailyPlanCard({ plan, onAdjustTime }: DailyPlanCardProps) {
           )}
           {allDone && <Badge variant="success">全部完成</Badge>}
           <svg
-            className={`w-5 h-5 text-slate-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+            className={`w-5 h-5 text-ink-muted transition-transform ${expanded ? "rotate-180" : ""}`}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -89,7 +89,7 @@ export function DailyPlanCard({ plan, onAdjustTime }: DailyPlanCardProps) {
           ))}
 
           {/* 调整每日可用时间 */}
-          <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+          <div className="flex items-center gap-2 pt-2 border-t border-line">
             {editingTime ? (
               <>
                 <input
@@ -98,9 +98,9 @@ export function DailyPlanCard({ plan, onAdjustTime }: DailyPlanCardProps) {
                   max={600}
                   value={timeValue}
                   onChange={(e) => setTimeValue(e.target.value)}
-                  className="w-20 h-8 px-2 border border-slate-300 rounded-lg text-sm"
+                  className="w-20 h-8 px-2 border border-line rounded-lg text-sm"
                 />
-                <span className="text-sm text-slate-500">分钟</span>
+                <span className="text-sm text-ink-muted">分钟</span>
                 <Button size="sm" variant="primary" onClick={handleSaveTime}>
                   保存
                 </Button>
@@ -120,7 +120,7 @@ export function DailyPlanCard({ plan, onAdjustTime }: DailyPlanCardProps) {
                 调整可用时间
               </Button>
             )}
-            <span className="text-xs text-slate-400 ml-auto">
+            <span className="text-xs text-ink-muted ml-auto">
               调整时间不会自动重排任务，如需重排请重新生成草稿
             </span>
           </div>

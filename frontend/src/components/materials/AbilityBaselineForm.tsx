@@ -102,7 +102,7 @@ export function AbilityBaselineForm({ baseline }: AbilityBaselineFormProps) {
     setter: (m: AssessmentMap) => void;
   }) => (
     <div className="flex items-center justify-between gap-2 py-1.5">
-      <span className="text-sm text-slate-700">{moduleDef(moduleKey)?.label}</span>
+      <span className="text-sm text-ink">{moduleDef(moduleKey)?.label}</span>
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((level) => (
           <button
@@ -112,8 +112,8 @@ export function AbilityBaselineForm({ baseline }: AbilityBaselineFormProps) {
             className={cn(
               "h-7 w-7 rounded-md text-xs font-medium border transition-colors",
               map[moduleKey]?.level === level
-                ? "border-blue-500 bg-blue-50 text-blue-700"
-                : "border-slate-200 text-slate-500 hover:bg-slate-50"
+                ? "border-brand bg-brand-soft text-brand"
+                : "border-line text-ink-muted hover:bg-canvas"
             )}
           >
             {level}
@@ -126,17 +126,17 @@ export function AbilityBaselineForm({ baseline }: AbilityBaselineFormProps) {
   return (
     <div className="space-y-4">
       <Card padding="sm">
-        <h4 className="text-sm font-semibold text-slate-900">模块掌握度自评</h4>
-        <p className="mt-1 text-xs text-slate-500">
+        <h4 className="text-sm font-semibold text-ink">模块掌握度自评</h4>
+        <p className="mt-1 text-xs text-ink-muted">
           1={SELF_ASSESSMENT_LEVEL_LABELS[1]}，5={SELF_ASSESSMENT_LEVEL_LABELS[5]}；再次点选可取消。
           评 1-2 分的模块会自动纳入薄弱项参考。
         </p>
         <div className="mt-2">
-          <p className="text-xs font-semibold text-slate-500">语文学科</p>
+          <p className="text-xs font-semibold text-ink-muted">语文学科</p>
           {CHINESE_MODULES.map((m) => (
             <AssessmentRow key={m.key} moduleKey={m.key} map={chinese} setter={setChinese} />
           ))}
-          <p className="mt-2 text-xs font-semibold text-slate-500">教综 / 其他模块（只评你目标考的）</p>
+          <p className="mt-2 text-xs font-semibold text-ink-muted">教综 / 其他模块（只评你目标考的）</p>
           {GENERAL_MODULES.map((m) => (
             <AssessmentRow key={m.key} moduleKey={m.key} map={general} setter={setGeneral} />
           ))}
@@ -144,12 +144,12 @@ export function AbilityBaselineForm({ baseline }: AbilityBaselineFormProps) {
       </Card>
 
       <Card padding="sm">
-        <h4 className="text-sm font-semibold text-slate-900">最近练习成绩</h4>
-        <p className="mt-1 text-xs text-slate-500">
+        <h4 className="text-sm font-semibold text-ink">最近练习成绩</h4>
+        <p className="mt-1 text-xs text-ink-muted">
           填写近 1-2 个月的模考或章节练习成绩；低于 60% 的模块会计入薄弱项参考。
         </p>
         <div className="mt-2 space-y-2">
-          {scores.length === 0 && <p className="text-xs text-slate-400">还没有记录。</p>}
+          {scores.length === 0 && <p className="text-xs text-ink-muted">还没有记录。</p>}
           {scores.map((score) => (
             <div key={score.id} className="grid grid-cols-12 gap-2">
               <div className="col-span-4">
@@ -182,22 +182,22 @@ export function AbilityBaselineForm({ baseline }: AbilityBaselineFormProps) {
                 <button
                   type="button"
                   onClick={() => removeScore(score.id)}
-                  className="text-xs text-slate-400 hover:text-red-600"
+                  className="text-xs text-ink-muted hover:text-danger"
                 >
                   删除
                 </button>
               </div>
             </div>
           ))}
-          <button type="button" onClick={addScore} className="text-xs font-medium text-blue-600 hover:underline">
+          <button type="button" onClick={addScore} className="text-xs font-medium text-brand hover:underline">
             + 添加成绩
           </button>
         </div>
       </Card>
 
       <Card padding="sm">
-        <h4 className="text-sm font-semibold text-slate-900">明显薄弱项</h4>
-        <p className="mt-1 text-xs text-slate-500">除自评与成绩自动识别外，你可以在这里手动补充（如：案例分析题）。</p>
+        <h4 className="text-sm font-semibold text-ink">明显薄弱项</h4>
+        <p className="mt-1 text-xs text-ink-muted">除自评与成绩自动识别外，你可以在这里手动补充（如：案例分析题）。</p>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {EXAM_MODULES.map((m) => (
             <button
@@ -207,8 +207,8 @@ export function AbilityBaselineForm({ baseline }: AbilityBaselineFormProps) {
               className={cn(
                 "px-2.5 py-1 rounded-full text-xs border transition-colors",
                 weakModules.includes(m.key)
-                  ? "border-amber-500 bg-amber-50 text-amber-700"
-                  : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+                  ? "border-warn bg-warn-soft text-warn"
+                  : "border-line bg-surface text-ink-muted hover:bg-canvas"
               )}
             >
               {weakModules.includes(m.key) ? "✓ " : ""}
@@ -219,8 +219,8 @@ export function AbilityBaselineForm({ baseline }: AbilityBaselineFormProps) {
       </Card>
 
       <Card padding="sm">
-        <h4 className="text-sm font-semibold text-slate-900">可用时间</h4>
-        <p className="mt-1 text-xs text-slate-500">
+        <h4 className="text-sm font-semibold text-ink">可用时间</h4>
+        <p className="mt-1 text-xs text-ink-muted">
           每周可用时间过少时，分析会主动收缩并行资料数量，避免多套资料同时摊开。
         </p>
         <div className="mt-3 grid grid-cols-2 gap-3">
@@ -242,14 +242,14 @@ export function AbilityBaselineForm({ baseline }: AbilityBaselineFormProps) {
         {weeklyHours > 0 && weeklyHours < 8 && (
           <div className="mt-2 flex items-center gap-2">
             <Badge variant="warning">时间偏紧</Badge>
-            <span className="text-xs text-slate-500">分析将优先保留覆盖面最匹配的一套主资料。</span>
+            <span className="text-xs text-ink-muted">分析将优先保留覆盖面最匹配的一套主资料。</span>
           </div>
         )}
       </Card>
 
       <div className="flex items-center gap-3">
         <Button onClick={handleSave}>保存准备情况</Button>
-        {savedAt && <span className="text-xs text-slate-400">已于 {savedAt} 保存</span>}
+        {savedAt && <span className="text-xs text-ink-muted">已于 {savedAt} 保存</span>}
       </div>
     </div>
   );

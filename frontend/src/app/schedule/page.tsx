@@ -48,18 +48,18 @@ export default function SchedulePage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6 pb-2">
       {nextAction ? (
-        <section className="rounded-2xl border border-blue-200 bg-gradient-to-b from-blue-50 to-white p-5 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-blue-600">
+        <section className="rounded-2xl border border-brand/30 bg-gradient-to-b from-brand-soft to-surface p-5 shadow-sm">
+          <p className="text-xs font-medium uppercase tracking-wide text-brand">
             当前最重要的一个动作
           </p>
-          <h1 className="mt-2 text-xl font-semibold text-slate-900">
+          <h1 className="mt-2 text-xl font-semibold text-ink">
             {nextAction.unitName}
           </h1>
-          <p className="mt-1 text-base text-slate-700">{nextAction.label}</p>
+          <p className="mt-1 text-base text-ink">{nextAction.label}</p>
           <Link
             href={nextAction.href}
             className={cn(
-              "mt-4 inline-flex h-10 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2",
+              "mt-4 inline-flex h-10 items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-white transition-colors hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2",
             )}
           >
             {nextAction.label}
@@ -88,15 +88,15 @@ export default function SchedulePage() {
               : undefined
           }
         >
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-ink-muted">
             {view.next.regionText} · {view.next.event.dateText}
           </p>
         </Hero>
       ) : (
         // 空态 2：有关注但近期没有需要行动的节点（时间未定显示“待官方通知”）
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <p className="text-lg font-semibold text-slate-900">近期没有需要处理的节点</p>
-          <p className="mt-2 text-sm text-slate-500">
+        <div className="rounded-xl border border-line bg-surface p-5">
+          <p className="text-lg font-semibold text-ink">近期没有需要处理的节点</p>
+          <p className="mt-2 text-sm text-ink-muted">
             时间未定的事项一律显示“待官方通知”，不会用推测日期提醒你。下面可以查看已关注机会的完整时间线。
           </p>
         </div>
@@ -104,11 +104,11 @@ export default function SchedulePage() {
 
       {/* 时间冲突提示：只提示，不替用户自动放弃 */}
       {view.conflicts.length > 0 && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm font-semibold text-amber-800">时间冲突提醒</p>
+        <div className="rounded-xl border border-warn/30 bg-warn-soft p-4">
+          <p className="text-sm font-semibold text-warn">时间冲突提醒</p>
           <ul className="mt-2 space-y-1.5">
             {view.conflicts.map((c) => (
-              <li key={c.dateIso} className="text-sm text-amber-700">
+              <li key={c.dateIso} className="text-sm text-warn">
                 <span className="font-medium">{c.dateText}</span>：
                 {c.items.map((i) => `${i.unitName}·${i.kindLabel}`).join("；")}
                 。请自行取舍，系统不会替你放弃任何机会。

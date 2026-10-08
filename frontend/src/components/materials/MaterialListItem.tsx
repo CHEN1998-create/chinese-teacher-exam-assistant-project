@@ -48,7 +48,7 @@ export function MaterialListItem({ material, diagnosis, onEdit }: MaterialListIt
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h4 className="text-sm font-semibold text-slate-900">{material.name}</h4>
+            <h4 className="text-sm font-semibold text-ink">{material.name}</h4>
             {material.sourceType === "unknown_scan" && <Badge variant="danger">来源不明扫描件</Badge>}
             {!material.catalogConfirmed && material.chapters.length > 0 && (
               <Badge variant="warning">目录未核对</Badge>
@@ -79,21 +79,21 @@ export function MaterialListItem({ material, diagnosis, onEdit }: MaterialListIt
 
       {/* 进度与章节 */}
       <div className="mt-3">
-        <div className="flex items-center justify-between text-xs text-slate-500">
+        <div className="flex items-center justify-between text-xs text-ink-muted">
           <span>学习进度</span>
           <span>{material.progress}%</span>
         </div>
-        <div className="mt-1 h-1.5 w-full rounded-full bg-slate-100">
+        <div className="mt-1 h-1.5 w-full rounded-full bg-canvas">
           <div className="h-full rounded-full bg-blue-500" style={{ width: `${material.progress}%` }} />
         </div>
         {material.chapters.length > 0 && (
           <ul className="mt-2 space-y-1">
             {material.chapters.map((chapter) => (
-              <li key={chapter.id} className="flex items-center gap-2 text-xs text-slate-600">
-                <span className={chapter.isCompleted ? "text-emerald-600" : "text-slate-300"}>
+              <li key={chapter.id} className="flex items-center gap-2 text-xs text-ink-muted">
+                <span className={chapter.isCompleted ? "text-success" : "text-ink-muted/60"}>
                   {chapter.isCompleted ? "✓" : "○"}
                 </span>
-                <span className={chapter.isCompleted ? "line-through text-slate-400" : ""}>
+                <span className={chapter.isCompleted ? "line-through text-ink-muted" : ""}>
                   {chapter.title}
                 </span>
               </li>
@@ -102,37 +102,37 @@ export function MaterialListItem({ material, diagnosis, onEdit }: MaterialListIt
         )}
       </div>
 
-      {material.note && <p className="mt-2.5 text-xs text-slate-500">备注：{material.note}</p>}
+      {material.note && <p className="mt-2.5 text-xs text-ink-muted">备注：{material.note}</p>}
 
       {/* 该项资料的总体诊断 */}
       {diagnosis && (
-        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/70 p-2.5">
+        <div className="mt-3 rounded-lg border border-line bg-canvas/70 p-2.5">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={RECOMMENDATION_VARIANT[diagnosis.recommendation]}>
               {MATERIAL_RECOMMENDATION_LABELS[diagnosis.recommendation]}
             </Badge>
-            <span className="text-xs text-slate-600">{diagnosis.reason}</span>
+            <span className="text-xs text-ink-muted">{diagnosis.reason}</span>
           </div>
           {diagnosis.items.length > 0 && (
-            <div className="mt-2 overflow-hidden rounded-lg border border-slate-200">
+            <div className="mt-2 overflow-hidden rounded-lg border border-line">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-100 text-slate-500">
+                <thead className="bg-canvas text-ink-muted">
                   <tr>
                     <th className="px-2 py-1.5 font-medium">考试模块</th>
                     <th className="px-2 py-1.5 font-medium">结论</th>
                     <th className="px-2 py-1.5 font-medium">原因</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
+                <tbody className="divide-y divide-line bg-surface">
                   {diagnosis.items.map((item) => (
                     <tr key={item.module}>
-                      <td className="px-2 py-1.5 text-slate-700">{item.moduleLabel}</td>
+                      <td className="px-2 py-1.5 text-ink">{item.moduleLabel}</td>
                       <td className="px-2 py-1.5">
                         <Badge variant={RECOMMENDATION_VARIANT[item.recommendation]}>
                           {MATERIAL_RECOMMENDATION_LABELS[item.recommendation]}
                         </Badge>
                       </td>
-                      <td className="px-2 py-1.5 text-slate-600">{item.reason}</td>
+                      <td className="px-2 py-1.5 text-ink-muted">{item.reason}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -140,12 +140,12 @@ export function MaterialListItem({ material, diagnosis, onEdit }: MaterialListIt
             </div>
           )}
           {diagnosis.suggestedChapterTitles.length > 0 && (
-            <p className="mt-1.5 text-xs text-slate-600">
+            <p className="mt-1.5 text-xs text-ink-muted">
               建议优先看：{diagnosis.suggestedChapterTitles.join("、")}
             </p>
           )}
           {diagnosis.warnings.map((warning) => (
-            <p key={warning} className="mt-1 text-xs text-red-600">
+            <p key={warning} className="mt-1 text-xs text-danger">
               ⚠ {warning}
             </p>
           ))}

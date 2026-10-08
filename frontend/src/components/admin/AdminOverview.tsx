@@ -39,6 +39,9 @@ export const MODULE_LABELS: Record<AnalyticsModule, string> = {
   correction: "纠错治理",
   privacy: "隐私删除",
   storage: "存储层",
+  home: "首页",
+  learn: "30 秒说明",
+  schedule: "日程",
 };
 
 function pct(m: MetricValue): string {

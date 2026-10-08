@@ -17,22 +17,22 @@ export function CoverageBanner({ coverage }: { coverage: CoverageDTO }) {
   return (
     <section
       aria-label="官方监测覆盖说明"
-      className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4"
+      className="rounded-xl border border-success/30 bg-success-soft/60 p-4"
       data-testid="coverage-banner"
     >
-      <h2 className="text-sm font-semibold text-emerald-900">
+      <h2 className="text-sm font-semibold text-success">
         官方监测 · {regionText}
       </h2>
-      <p className="mt-2 text-sm text-emerald-900">
+      <p className="mt-2 text-sm text-success">
         当前监测到{" "}
         <span className="font-semibold">
           {coverage.openOpportunityCount} 个在报语文教师岗位
         </span>
         ；最近一次核对官方来源：{formatDay(coverage.lastCheckedAt)}。
       </p>
-      <p className="mt-1 text-sm text-slate-600">{coverage.nextWindowNote}</p>
+      <p className="mt-1 text-sm text-ink-muted">{coverage.nextWindowNote}</p>
 
-      <ul className="mt-3 space-y-1 text-xs text-slate-500">
+      <ul className="mt-3 space-y-1 text-xs text-ink-muted">
         {coverage.regions.flatMap((region) =>
           region.sources.map((source) => (
             <li
@@ -43,8 +43,8 @@ export function CoverageBanner({ coverage }: { coverage: CoverageDTO }) {
                 aria-hidden="true"
                 className={
                   source.ok
-                    ? "inline-block h-1.5 w-1.5 rounded-full bg-emerald-500"
-                    : "inline-block h-1.5 w-1.5 rounded-full bg-red-500"
+                    ? "inline-block h-1.5 w-1.5 rounded-full bg-success"
+                    : "inline-block h-1.5 w-1.5 rounded-full bg-danger"
                 }
               />
               <span>
@@ -59,7 +59,7 @@ export function CoverageBanner({ coverage }: { coverage: CoverageDTO }) {
         )}
       </ul>
 
-      <p className="mt-3 border-t border-emerald-100 pt-2 text-xs leading-relaxed text-slate-500">
+      <p className="mt-3 border-t border-success/30 pt-2 text-xs leading-relaxed text-ink-muted">
         {coverage.scopeNote}
         下方「真实监测记录」均为 AI 依据官方原文初核、
         <span className="font-medium">尚待人工复核</span>

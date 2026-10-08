@@ -22,7 +22,10 @@ export type AnalyticsModule =
   | "replan"
   | "correction"
   | "privacy"
-  | "storage";
+  | "storage"
+  | "home"
+  | "learn"
+  | "schedule";
 
 /**
  * 事件类型。
@@ -63,9 +66,18 @@ export type AnalyticsEventType =
   | "resource_used" // 资源实际使用（加入计划后置为使用中/已使用）
   | "review_completed" // 人工审核完成（记录处理时长、是否修正）
   | "extraction_failed" // AI 提取任务失败
-  | "plan_generation_failed" // 计划生成失败（非“数据不足”的正常拦截）
+  | "plan_generation_failed" // 计划生成失败（非"数据不足"的正常拦截）
   | "feedback_submit_failed" // 反馈保存失败
-  | "critical_write_failed"; // 关键数据写入失败
+  | "critical_write_failed" // 关键数据写入失败
+  // —— v6.1 模块 0A 页面体验优化补缺口事件（不含个人信息） ——
+  | "home_start_match_clicked" // 首页点击"开始匹配"
+  | "learn_opened" // 打开 30 秒说明路径
+  | "learn_start_match_clicked" // 从 30 秒说明路径点击"开始匹配"
+  | "profile_resumed" // 从首页/草稿恢复上次进度进入问答
+  | "preview_summary_edited" // 结果页"修改"回到对应问答组
+  | "preview_revealed" // 初步结果曝光
+  | "priority_opportunity_viewed" // 查看优先机会
+  | "schedule_action_started"; // 日程页点击下一项行动
 
 /**
  * 统一分析事件。

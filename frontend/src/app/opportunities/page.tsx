@@ -108,28 +108,28 @@ export default function OpportunitiesPage() {
       {view.uncoveredRegions.length > 0 && (
         <div
           data-testid="uncovered-regions"
-          className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4"
+          className="rounded-xl border border-dashed border-line bg-canvas p-4"
         >
-          <p className="text-sm font-semibold text-slate-700">
+          <p className="text-sm font-semibold text-ink">
             这些地区当前暂未收录官方公告
           </p>
           <p className="mt-1 flex flex-wrap gap-1.5 text-xs">
             {view.uncoveredRegions.map((region) => (
               <span
                 key={region.code}
-                className="inline-flex items-center rounded-full bg-white px-2 py-0.5 font-medium text-slate-600 ring-1 ring-slate-200"
+                className="inline-flex items-center rounded-full bg-surface px-2 py-0.5 font-medium text-ink-muted ring-1 ring-line"
               >
                 {region.label}
               </span>
             ))}
           </p>
-          <p className="mt-2 text-xs leading-5 text-slate-500">
+          <p className="mt-2 text-xs leading-5 text-ink-muted">
             暂未收录不等于当地没有招聘：可能公告尚未发布，或还没进入我们的监测范围。
             结果是预筛而非官方资格认定，报名前请以当地教育局/人社局官网为准。
           </p>
           <Link
             href="/onboarding"
-            className="mt-2 inline-block text-xs font-medium text-blue-700 underline underline-offset-2"
+            className="mt-2 inline-block text-xs font-medium text-brand underline underline-offset-2"
           >
             修改画像地区
           </Link>
@@ -148,7 +148,7 @@ export default function OpportunitiesPage() {
       {actionError && (
         <p
           role="alert"
-          className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+          className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
         >
           操作未完成：{actionError}
         </p>
@@ -225,31 +225,9 @@ export default function OpportunitiesPage() {
         </section>
       )}
 
-      {view.realMonitored.length > 0 && (
-        <section
-          id="real-monitored"
-          data-testid="real-monitored"
-          className="space-y-3 scroll-mt-20"
-        >
-          <LayerHeading
-            title="真实监测记录（杭州 / 宁波 · AI 初核待人工复核）"
-            count={view.realMonitored.length}
-          />
-          {view.realMonitored.map((unit) => (
-            <OpportunityListItem
-              key={unit.unit.id}
-              unit={unit}
-              evaluatedAt={evaluatedAt}
-              followBusy={followBusyId === unit.unit.id}
-              onToggleFollow={toggleFollow}
-            />
-          ))}
-          <p className="text-xs leading-relaxed text-slate-400">
-            这些记录来自政府官网公告原文与岗位表附件，可逐卡片点开「官方原文 /
-            岗位表附件」核对；在人工复核完成前，它们不会进入「初步符合」推荐。
-          </p>
-        </section>
-      )}
+      {/* 模块 7.5：用户端不显示 AI 初核待人工复核记录（real）。
+          list-view 已把 realMonitored 置空，此处不再渲染该分组。
+          后续若后端 API 增加 status 过滤，realMonitored 永远为空，此注释块可删除。 */}
 
       {view.regionOutOfScope.length > 0 && (
         <Disclosure
@@ -257,7 +235,7 @@ export default function OpportunitiesPage() {
           count={view.regionOutOfScope.length}
         >
           <div className="space-y-3">
-            <p className="text-xs leading-5 text-slate-500">
+            <p className="text-xs leading-5 text-ink-muted">
               这些岗位只是地点不在你画像勾选的可接受地区内，学历、专业等条件并未判定为不符合。
               调整画像地区后会重新评估。
             </p>
@@ -298,7 +276,7 @@ export default function OpportunitiesPage() {
               />
             ))}
           </div>
-          <p className="mt-3 text-xs text-slate-400">
+          <p className="mt-3 text-xs text-ink-muted">
             该状态只表示当前不进入推荐，历史留档与官方依据仍可追溯；它不是资格不符合结论。
           </p>
         </Disclosure>

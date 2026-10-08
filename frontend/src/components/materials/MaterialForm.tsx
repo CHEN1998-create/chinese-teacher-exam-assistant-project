@@ -89,7 +89,7 @@ function ModuleCheckboxGroup({
 }) {
   return (
     <div>
-      <p className="text-xs font-semibold text-slate-500 mb-1.5">{title}</p>
+      <p className="text-xs font-semibold text-ink-muted mb-1.5">{title}</p>
       <div className="flex flex-wrap gap-1.5">
         {modules.map((m) => {
           const checked = selected.includes(m.key);
@@ -101,8 +101,8 @@ function ModuleCheckboxGroup({
               className={
                 "px-2.5 py-1 rounded-full text-xs border transition-colors " +
                 (checked
-                  ? "border-blue-500 bg-blue-50 text-blue-700"
-                  : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50")
+                  ? "border-brand bg-brand-soft text-brand"
+                  : "border-line bg-surface text-ink-muted hover:bg-canvas")
               }
             >
               {checked ? "✓ " : ""}
@@ -255,7 +255,7 @@ export function MaterialForm({ targetId, initial, onClose }: MaterialFormProps) 
         </div>
 
         {form.sourceType === "unknown_scan" && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-700">
+          <div className="rounded-lg border border-danger/30 bg-danger-soft p-2.5 text-xs text-danger">
             来源不明的完整扫描件存在版权风险：仅可作个人临时参考，<strong>不能进入公共资源库</strong>，
             分析也会建议本周暂不使用。
           </div>
@@ -264,32 +264,32 @@ export function MaterialForm({ targetId, initial, onClose }: MaterialFormProps) 
         {/* 目录章节：允许手动维护，不做 PDF 解析 */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <p className="text-sm font-medium text-slate-700">目录 / 章节</p>
+            <p className="text-sm font-medium text-ink">目录 / 章节</p>
             <button
               type="button"
               onClick={recognizeChapters}
-              className="text-xs text-blue-600 hover:underline"
+              className="text-xs text-brand hover:underline"
             >
               根据章节名识别覆盖模块
             </button>
           </div>
           <div className="space-y-1.5">
             {form.chapters.length === 0 && (
-              <p className="text-xs text-slate-400">还没有章节，点下方按钮手动添加（无需上传 PDF）。</p>
+              <p className="text-xs text-ink-muted">还没有章节，点下方按钮手动添加（无需上传 PDF）。</p>
             )}
             {form.chapters.map((chapter, i) => (
               <div key={i} className="flex items-center gap-2">
-                <span className="text-xs text-slate-400 w-5 shrink-0">{i + 1}.</span>
+                <span className="text-xs text-ink-muted w-5 shrink-0">{i + 1}.</span>
                 <input
                   value={chapter.title}
                   onChange={(e) => updateChapter(i, e.target.value)}
                   placeholder="章节标题，如：古代汉语"
-                  className="h-9 flex-1 min-w-0 px-2.5 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="h-9 flex-1 min-w-0 px-2.5 rounded-lg border border-line text-sm focus:outline-none focus:ring-2 focus:ring-brand"
                 />
                 <button
                   type="button"
                   onClick={() => removeChapter(i)}
-                  className="text-xs text-slate-400 hover:text-red-600 shrink-0"
+                  className="text-xs text-ink-muted hover:text-danger shrink-0"
                 >
                   删除
                 </button>
@@ -299,24 +299,24 @@ export function MaterialForm({ targetId, initial, onClose }: MaterialFormProps) 
           <button
             type="button"
             onClick={addChapter}
-            className="mt-2 text-xs font-medium text-blue-600 hover:underline"
+            className="mt-2 text-xs font-medium text-brand hover:underline"
           >
             + 添加章节
           </button>
-          <label className="mt-2 flex items-center gap-2 text-xs text-slate-600">
+          <label className="mt-2 flex items-center gap-2 text-xs text-ink-muted">
             <input
               type="checkbox"
               checked={form.catalogConfirmed}
               onChange={(e) => patch({ catalogConfirmed: e.target.checked })}
-              className="rounded border-slate-300"
+              className="rounded border-line"
             />
             我已核对章节目录（识别不准时可直接手动修改标题或覆盖模块）
           </label>
         </div>
 
         {/* 覆盖模块 */}
-        <div className="space-y-2.5 rounded-lg border border-slate-200 p-3">
-          <p className="text-sm font-medium text-slate-700">覆盖的考试模块</p>
+        <div className="space-y-2.5 rounded-lg border border-line p-3">
+          <p className="text-sm font-medium text-ink">覆盖的考试模块</p>
           <ModuleCheckboxGroup
             title="语文学科"
             modules={CHINESE_MODULES}
@@ -352,8 +352,8 @@ export function MaterialForm({ targetId, initial, onClose }: MaterialFormProps) 
           value={form.note}
           onChange={(e) => patch({ note: e.target.value })}
         />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <p className="text-[11px] text-slate-400">
+        {error && <p className="text-sm text-danger">{error}</p>}
+        <p className="text-[11px] text-ink-muted">
           已选覆盖模块：
           {form.coversModules.length > 0
             ? form.coversModules.map((k) => moduleLabel(k)).join("、")

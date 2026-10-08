@@ -60,10 +60,10 @@ export default function MaterialsPage() {
       {/* 标题与当前目标范围声明 */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">我的资料与准备情况</h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <h2 className="text-xl font-bold text-ink">我的资料与准备情况</h2>
+          <p className="mt-1 text-sm text-ink-muted">
             分析范围仅限你准备的考试：
-            <span className="font-medium text-slate-700">「{target.name}」</span>
+            <span className="font-medium text-ink">「{target.name}」</span>
             （{target.region}
             {target.educationLevel === "middle" ? "·初中" : target.educationLevel === "primary" ? "·小学" : target.educationLevel === "high" ? "·高中" : ""}
             {target.year ? `·${target.year}` : ""}）
@@ -73,7 +73,7 @@ export default function MaterialsPage() {
       </div>
 
       {target.name.includes("【演示案例") && (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-500">
+        <div className="rounded-xl border border-line bg-canvas p-3 text-xs leading-relaxed text-ink-muted">
           你正在查看内置演示目标：可在「我的考试」页切换当前主目标，或在「设置」里清空本地数据后从空状态开始体验。
           演示资料只保存在你的浏览器中，不构成任何购买建议。
         </div>
@@ -88,7 +88,7 @@ export default function MaterialsPage() {
                 value={baseline?.inventoryStatus ?? "none"}
                 onSelect={(status) => materialService.setInventoryStatus(target.id, status)}
               />
-              <p className="mt-2 text-[11px] text-slate-400">
+              <p className="mt-2 text-[11px] text-ink-muted">
                 当前选择：{USAGE_STATUS_LABELS[baseline?.inventoryStatus ?? "none"]}
                 ；新增或删除资料后此状态会自动同步。
               </p>
@@ -105,7 +105,7 @@ export default function MaterialsPage() {
             ) : (
               <>
                 <div className="flex items-center justify-between px-1">
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-ink-muted">
                     共 {materials.length} 份私有资料
                     {snapshot && <Badge variant="muted" className="ml-2">已分析 {snapshot.materialDiagnoses.length} 份</Badge>}
                   </p>
@@ -132,7 +132,7 @@ export default function MaterialsPage() {
         <TabPanel id="baseline" activeTab={activeTab}>
           {baseline && (
             <>
-              <p className="mb-3 text-xs text-slate-500">
+              <p className="mb-3 text-xs text-ink-muted">
                 准备情况用于判断资料怎么用（如时间不足时收缩并行资料、薄弱模块优先保留），只保存在本地，不与公共资源混用。
               </p>
               <AbilityBaselineForm key={target.id} baseline={baseline} />

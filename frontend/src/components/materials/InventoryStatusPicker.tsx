@@ -34,7 +34,7 @@ const OPTIONS: {
 export function InventoryStatusPicker({ value, onSelect }: InventoryStatusPickerProps) {
   return (
     <div>
-      <p className="text-sm font-semibold text-slate-800 mb-2">你现在的资料情况是？</p>
+      <p className="text-sm font-semibold text-ink mb-2">你现在的资料情况是？</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         {OPTIONS.map((opt) => {
           const active = value === opt.status;
@@ -46,15 +46,15 @@ export function InventoryStatusPicker({ value, onSelect }: InventoryStatusPicker
               className={cn(
                 "text-left rounded-xl border p-3.5 transition-colors",
                 active
-                  ? "border-blue-500 bg-blue-50/60 ring-1 ring-blue-500"
-                  : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                  ? "border-brand bg-brand-soft/60 ring-1 ring-brand"
+                  : "border-line bg-surface hover:border-line hover:bg-canvas"
               )}
             >
               <p className="text-2xl">{opt.icon}</p>
-              <p className={cn("mt-2 text-sm font-medium", active ? "text-blue-700" : "text-slate-800")}>
+              <p className={cn("mt-2 text-sm font-medium", active ? "text-brand" : "text-ink")}>
                 {USAGE_STATUS_LABELS[opt.status]}
               </p>
-              <p className="mt-1 text-xs leading-relaxed text-slate-500">{opt.desc}</p>
+              <p className="mt-1 text-xs leading-relaxed text-ink-muted">{opt.desc}</p>
             </button>
           );
         })}

@@ -100,25 +100,25 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-slate-50 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-b from-brand-soft to-slate-50 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
         {/* 品牌区 */}
         <div className="text-center mb-6">
-          <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+          <div className="w-14 h-14 bg-brand-soft rounded-2xl flex items-center justify-center mx-auto mb-3">
             <span className="text-2xl">📝</span>
           </div>
-          <h1 className="text-xl font-bold text-slate-900">教招有据</h1>
-          <p className="text-sm text-slate-500 mt-1">教师招聘机会与资格预筛</p>
-          <p className="mt-3 text-xs leading-5 text-slate-400">
+          <h1 className="text-xl font-bold text-ink">教招有据</h1>
+          <p className="text-sm text-ink-muted mt-1">教师招聘机会与资格预筛</p>
+          <p className="mt-3 text-xs leading-5 text-ink-muted">
             登录后可以保存关注机会与报考进度；资格结果为预筛，最终以官方公告和招聘单位审核为准
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <div className="bg-surface rounded-2xl border border-line shadow-sm p-6">
           {/* Demo 声明 */}
           {demo && (
-            <div className="mb-4 p-3 rounded-lg bg-amber-50 border border-amber-200">
-              <p className="text-xs leading-5 text-amber-800">
+            <div className="mb-4 p-3 rounded-lg bg-warn-soft border border-warn/30">
+              <p className="text-xs leading-5 text-warn">
                 <strong>演示环境提示：</strong>
                 这里使用的是内置演示账号，<strong>不是真实身份认证</strong>，没有真实注册与密码校验；
                 演示数据仅保存在本机浏览器，不代表正式服务数据。请勿输入真实密码或其他个人信息。
@@ -128,8 +128,8 @@ function LoginForm() {
 
           {/* 会话失效提示 */}
           {(sessionExpired || reason === "expired") && (
-            <div className="mb-4 p-3 rounded-lg bg-slate-50 border border-slate-200">
-              <p className="text-xs leading-5 text-slate-600">
+            <div className="mb-4 p-3 rounded-lg bg-canvas border border-line">
+              <p className="text-xs leading-5 text-ink-muted">
                 登录状态已过期，请重新登录。
               </p>
             </div>
@@ -139,7 +139,7 @@ function LoginForm() {
             <div>
               <label
                 htmlFor="account"
-                className="block text-sm font-medium text-slate-700 mb-1.5"
+                className="block text-sm font-medium text-ink mb-1.5"
               >
                 账号
               </label>
@@ -150,14 +150,14 @@ function LoginForm() {
                 placeholder={demo ? "演示邮箱，例如 student@demo.app" : "邮箱"}
                 value={account}
                 onChange={(e) => setAccount(e.target.value)}
-                className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
               />
             </div>
 
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-slate-700 mb-1.5"
+                className="block text-sm font-medium text-ink mb-1.5"
               >
                 密码
               </label>
@@ -168,13 +168,13 @@ function LoginForm() {
                 placeholder={demo ? "演示密码：demo1234" : "密码"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-10 px-3 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full h-10 px-3 rounded-lg border border-line bg-surface text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent"
               />
             </div>
 
             {error && (
-              <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-                <p className="text-sm text-red-700">{error}</p>
+              <div className="p-3 rounded-lg bg-danger-soft border border-danger/30">
+                <p className="text-sm text-danger">{error}</p>
               </div>
             )}
 
@@ -186,7 +186,7 @@ function LoginForm() {
           {/* 演示账号快捷填充 */}
           {demo && (
             <div className="mt-6">
-              <p className="text-xs font-medium text-slate-500 mb-2">
+              <p className="text-xs font-medium text-ink-muted mb-2">
                 演示账号（点击自动填充，密码均为 demo1234）
               </p>
               <div className="grid grid-cols-2 gap-2">
@@ -195,10 +195,10 @@ function LoginForm() {
                     key={item.account}
                     type="button"
                     onClick={() => fillDemoAccount(item.account, item.password)}
-                    className="text-left p-2.5 rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50/50 transition-colors"
+                    className="text-left p-2.5 rounded-lg border border-line hover:border-blue-400 hover:bg-brand-soft/50 transition-colors"
                   >
-                    <p className="text-sm font-medium text-slate-900">{item.description}</p>
-                    <p className="text-xs text-slate-400 truncate mt-0.5">{item.account}</p>
+                    <p className="text-sm font-medium text-ink">{item.description}</p>
+                    <p className="text-xs text-ink-muted truncate mt-0.5">{item.account}</p>
                   </button>
                 ))}
               </div>
@@ -206,14 +206,14 @@ function LoginForm() {
           )}
         </div>
 
-        <p className="text-center text-xs text-slate-400 mt-4">
+        <p className="text-center text-xs text-ink-muted mt-4">
           {demo
             ? "未注册账号？Demo 阶段无需注册，请直接使用演示账号"
             : "仅限受邀测试用户，不开放公开注册"}
         </p>
         {safeNext(nextParam) === "/preview" && (
           <p className="text-center text-xs mt-3">
-            <a href="/preview" className="text-blue-600 hover:underline">
+            <a href="/preview" className="text-brand hover:underline">
               暂不登录，返回查看我的结果
             </a>
           </p>

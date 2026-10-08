@@ -78,7 +78,7 @@ export function QuickFeedbackPanel({ task, onSubmitted, onAvailableTimeChange }:
 
   const reasonStep = (
     <div className="mt-3">
-      <p className="text-xs text-slate-500 mb-2">可以选一个最接近的原因，也可以跳过（选完即保存）</p>
+      <p className="text-xs text-ink-muted mb-2">可以选一个最接近的原因，也可以跳过（选完即保存）</p>
       <div className="flex flex-wrap gap-2">
         {(Object.entries(INCOMPLETE_REASON_LABELS) as [IncompleteReason, string][]).map(
           ([key, label]) => (
@@ -87,7 +87,7 @@ export function QuickFeedbackPanel({ task, onSubmitted, onAvailableTimeChange }:
               type="button"
               disabled={saving}
               onClick={() => pickReason(key)}
-              className="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 hover:border-blue-400 hover:bg-blue-50 transition-colors disabled:opacity-50"
+              className="px-3 py-2 rounded-lg border border-line text-sm text-ink hover:border-blue-400 hover:bg-brand-soft transition-colors disabled:opacity-50"
             >
               {label}
             </button>
@@ -98,7 +98,7 @@ export function QuickFeedbackPanel({ task, onSubmitted, onAvailableTimeChange }:
         <button
           type="button"
           onClick={reset}
-          className="text-xs text-slate-400 hover:text-slate-600"
+          className="text-xs text-ink-muted hover:text-ink-muted"
         >
           返回重新选择
         </button>
@@ -106,7 +106,7 @@ export function QuickFeedbackPanel({ task, onSubmitted, onAvailableTimeChange }:
           type="button"
           disabled={saving}
           onClick={() => submit(pendingStatus!)}
-          className="text-xs text-blue-600 hover:underline disabled:opacity-50"
+          className="text-xs text-brand hover:underline disabled:opacity-50"
         >
           跳过原因，直接保存
         </button>
@@ -116,7 +116,7 @@ export function QuickFeedbackPanel({ task, onSubmitted, onAvailableTimeChange }:
 
   const timeFollowupStep = (
     <div className="mt-3">
-      <p className="text-xs text-slate-500 mb-2">
+      <p className="text-xs text-ink-muted mb-2">
         明天大约能学多久？（只问这一个，用来安排明天的任务总时长）
       </p>
       <div className="flex flex-wrap gap-2">
@@ -129,7 +129,7 @@ export function QuickFeedbackPanel({ task, onSubmitted, onAvailableTimeChange }:
               onAvailableTimeChange?.(m);
               submit(pendingStatus!, "time");
             }}
-            className="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-700 hover:border-blue-400 hover:bg-blue-50 transition-colors disabled:opacity-50"
+            className="px-3 py-2 rounded-lg border border-line text-sm text-ink hover:border-blue-400 hover:bg-brand-soft transition-colors disabled:opacity-50"
           >
             {m} 分钟
           </button>
@@ -138,7 +138,7 @@ export function QuickFeedbackPanel({ task, onSubmitted, onAvailableTimeChange }:
           type="button"
           disabled={saving}
           onClick={() => submit(pendingStatus!, "time")}
-          className="px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-slate-600 disabled:opacity-50"
+          className="px-3 py-2 rounded-lg text-sm text-ink-muted hover:text-ink-muted disabled:opacity-50"
         >
           不确定
         </button>
@@ -146,7 +146,7 @@ export function QuickFeedbackPanel({ task, onSubmitted, onAvailableTimeChange }:
       <button
         type="button"
         onClick={() => setStage("reason")}
-        className="mt-2 text-xs text-slate-400 hover:text-slate-600"
+        className="mt-2 text-xs text-ink-muted hover:text-ink-muted"
       >
         返回
       </button>
@@ -172,7 +172,7 @@ export function QuickFeedbackPanel({ task, onSubmitted, onAvailableTimeChange }:
               setPendingStatus("partial");
               setStage("reason");
             }}
-            className="h-11 rounded-xl bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
+            className="h-11 rounded-xl bg-warn text-white text-sm font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
           >
             做了一部分
           </button>
@@ -183,7 +183,7 @@ export function QuickFeedbackPanel({ task, onSubmitted, onAvailableTimeChange }:
               setPendingStatus("not_completed");
               setStage("reason");
             }}
-            className="h-11 rounded-xl border border-slate-300 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
+            className="h-11 rounded-xl border border-line text-ink text-sm font-medium hover:bg-canvas transition-colors disabled:opacity-50"
           >
             今天没做
           </button>
@@ -194,9 +194,9 @@ export function QuickFeedbackPanel({ task, onSubmitted, onAvailableTimeChange }:
       {stage === "time_followup" && pendingStatus && timeFollowupStep}
 
       {error && (
-        <div role="alert" className="mt-3 p-3 rounded-lg bg-red-50 border border-red-200">
-          <p className="text-sm text-red-700">{error}</p>
-          <p className="text-xs text-red-500 mt-1">
+        <div role="alert" className="mt-3 p-3 rounded-lg bg-danger-soft border border-danger/30">
+          <p className="text-sm text-danger">{error}</p>
+          <p className="text-xs text-danger mt-1">
             你的选择已保留，检查存储后
             <button
               type="button"

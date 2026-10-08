@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCurrentUser } from "@/lib/auth";
-import { guestSessionService } from "@/lib/guest/guestSession";
+import { guestSessionService, type GuestProfileDraft } from "@/lib/guest/guestSession";
 import { buildGuestPreview, type GuestPreview } from "@/lib/guest/previewEngine";
 import { GUEST_COVERAGE } from "@/lib/guest/coverage";
 import { getRollingDemoAnnouncements } from "@/lib/seed/demoTimeline";
@@ -13,9 +13,11 @@ import { OpportunityCard } from "@/components/ia/OpportunityCard";
 import { Disclosure, LayerHeading } from "@/components/ia/Layer";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { LinkButton } from "@/components/ui/LinkButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingPage } from "@/components/ui/Loading";
-import { trackOncePerUser } from "@/lib/analytics/eventService";
+import { track, trackOncePerUser } from "@/lib/analytics/eventService";
+import { USER_COPY } from "@/lib/ux/userCopy";
 import type { GuestPreviewReady } from "@/lib/guest/previewEngine";
 import type { ProfileLimitation } from "@/lib/guest/guestSession";
 
@@ -97,23 +99,23 @@ function NotOpenSubject({
   onLeaveIntention: () => void;
 }) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-slate-50">
+    <div className="min-h-screen bg-canvas">
       <div className="max-w-lg mx-auto px-4 py-10">
         <Card className="text-center py-10">
-          <div className="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <div className="w-14 h-14 bg-warn-soft rounded-2xl flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl" aria-hidden="true">🚧</span>
           </div>
-          <h1 className="text-xl font-bold text-slate-900 mb-2">
+          <h1 className="text-xl font-bold text-ink mb-2">
             「{subjectLabel}」教师公开招聘匹配尚未开放
           </h1>
-          <p className="text-sm text-slate-500 leading-relaxed mb-6">
-            当前先开放<strong className="text-slate-700">语文</strong>教师公开招聘。
+          <p className="text-sm text-ink-muted leading-relaxed mb-6">
+            当前先开放<strong className="text-ink">语文</strong>教师公开招聘。
             为了避免误导，我们不会用语文岗位为你生成不相关的匹配结果。
           </p>
           {intentionLeft ? (
-            <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
+            <div className="rounded-lg bg-success-soft border border-success/30 px-4 py-3 text-sm text-success">
               已在本机记录你对「{subjectLabel}」的开注意向。
-              <p className="text-xs text-emerald-700 mt-1">
+              <p className="text-xs text-success mt-1">
                 意向仅保存在当前浏览器，不会上传服务器；演示环境不会发送真实通知。
               </p>
             </div>
@@ -123,17 +125,17 @@ function NotOpenSubject({
             </Button>
           )}
           {error && (
-            <p role="alert" className="mt-2 text-sm text-red-600">
+            <p role="alert" className="mt-2 text-sm text-danger">
               {error}
             </p>
           )}
-          <p className="text-xs text-slate-400 mt-3">
-            意向只保存在本机浏览器，不上传、不发送真实通知。
+          <p className="text-xs text-ink-muted mt-3">
+            意向只保存在这台设备，不上传、不发送真实通知。
           </p>
         </Card>
-        <p className="text-center text-sm text-slate-500 mt-6">
+        <p className="text-center text-sm text-ink-muted mt-6">
           想先看看语文机会？
-          <Link href="/onboarding" className="text-blue-600 hover:underline ml-1">
+          <Link href="/onboarding" className="text-brand hover:underline ml-1">
             返回修改学科
           </Link>
         </p>
@@ -166,7 +168,11 @@ function ReadyPreview({ preview }: { preview: GuestPreviewReady }) {
   const { view, followUps, limitations, primaryAction } = preview;
 
   // P0 漏斗②：访客看到至少一个有效（初步符合）机会；同用户只记一次
+  // 模块 0A 补缺口事件：初步结果曝光
   useEffect(() => {
+    track("preview_revealed", "opportunity", {
+      props: { validCount: view.validCount },
+    });
     if (view.validCount > 0) {
       trackOncePerUser("opportunity_revealed", "opportunity", {
         targetId: view.priority?.unitId,
@@ -199,7 +205,7 @@ function ReadyPreview({ preview }: { preview: GuestPreviewReady }) {
           count={view.regionOutOfScope.length}
         >
           <div className="space-y-3">
-            <p className="text-xs leading-5 text-slate-500">
+            <p className="text-xs leading-5 text-ink-muted">
               这些岗位只是地点不在你勾选的可接受地区内，其他条件没有被判为不符合；
               修改画像地区后会重新评估。
             </p>
@@ -243,7 +249,7 @@ function ReadyPreview({ preview }: { preview: GuestPreviewReady }) {
               />
             ))}
           </div>
-          <p className="mt-3 text-xs text-slate-400">
+          <p className="mt-3 text-xs text-ink-muted">
             该状态只表示当前不进入推荐，历史留档仍可追溯；它不是资格不符合结论。
           </p>
         </Disclosure>
@@ -256,26 +262,29 @@ function ReadyPreview({ preview }: { preview: GuestPreviewReady }) {
     const missingRegion = limitations.some((item) => item.step === 1);
     const regionFollowUp = followUps.find((f) => f.dimension === "region");
     return (
-      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-slate-50">
+      <div className="min-h-screen bg-canvas">
         <div className="mx-auto max-w-2xl space-y-4 py-6 px-4">
-          <p className="text-xs text-slate-500">{formatCoverageLine()}</p>
+          <SummaryCard />
+          <p className="text-xs text-ink-muted">{formatCoverageLine()}</p>
           <UncoveredRegionsCard regionLabels={view.uncoveredRegions.map((r) => r.label)} />
           {missingRegion && (
-            <Card className="border-amber-200 bg-amber-50/70" data-testid="missing-region-notice">
-              <h2 className="text-sm font-semibold text-amber-900">
+            <Card className="border-warn/30 bg-warn-soft/70" data-testid="missing-region-notice">
+              <h2 className="text-sm font-semibold text-warn">
                 你选择了暂不提供「能接受的地区」
               </h2>
-              <p className="mt-1.5 text-sm leading-relaxed text-amber-800">
+              <p className="mt-1.5 text-sm leading-relaxed text-warn">
                 没有地区意向时不会给出任何「初步符合」结果
                 {regionFollowUp ? `（当前 ${regionFollowUp.affectsCount} 个示例岗位都在等你补充地区）` : ""}
                 ；这不是不符合，补充至少一个地区后结论会立即重新计算。
               </p>
-              <Link
+              <LinkButton
                 href="/onboarding"
-                className="mt-3 inline-flex h-10 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                variant="primary"
+                size="md"
+                className="mt-3"
               >
                 返回补充地区
-              </Link>
+              </LinkButton>
             </Card>
           )}
           <EmptyState
@@ -299,8 +308,11 @@ function ReadyPreview({ preview }: { preview: GuestPreviewReady }) {
   const otherPreliminary = view.preliminary.filter((row) => row.unitId !== priority.unitId);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-slate-50">
+    <div className="min-h-screen bg-canvas">
       <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        {/* 顶部回答摘要：根据这些信息为你判断（模块 0A §7.4） */}
+        <SummaryCard />
+
         {/* 第一层：一句结论 + 一个风险 + 唯一主行动（关注才登录） */}
         <Hero
           meta={formatCoverageLine()}
@@ -312,7 +324,7 @@ function ReadyPreview({ preview }: { preview: GuestPreviewReady }) {
               : undefined
           }
         >
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-ink-muted">
             不登录也可以继续查看全部结果；登录后才能关注机会、保存画像和跟踪报名（演示环境不发送真实通知）。
           </p>
         </Hero>
@@ -361,12 +373,12 @@ function ReadyPreview({ preview }: { preview: GuestPreviewReady }) {
                 title={`补充${followUp.dimensionText}信息后判断`}
                 count={followUp.affectsCount}
               />
-              <Card className="bg-amber-50/60 border-amber-200">
-                <p className="text-sm text-amber-800 leading-relaxed">
+              <Card className="bg-warn-soft/60 border-warn/30">
+                <p className="text-sm text-warn leading-relaxed">
                   有 {followUp.affectsCount} 个机会需要这条信息。{followUp.reason}
                 </p>
                 {CONDITIONAL_DIMENSIONS.has(followUp.dimension) && (
-                  <p className="text-xs text-amber-700/80 mt-1">
+                  <p className="text-xs text-warn/80 mt-1">
                     年龄、户籍、社保和工作经历只在具体机会需要时补问，不需要在基础信息里一次填完。
                   </p>
                 )}
@@ -401,16 +413,79 @@ function ReadyPreview({ preview }: { preview: GuestPreviewReady }) {
         {/* 留档分区：仅地区不重叠 / 明确不符合 / 异常态分桶 */}
         {archiveSections}
 
-        <p className="text-center text-xs text-slate-400">
+        <p className="text-center text-xs text-ink-muted">
           初步匹配结果不等于保证可以报名，最终资格以招聘单位审核为准。
-          演示机会与画像均保存在本机浏览器，可随时
-          <Link href="/onboarding" className="text-blue-600 hover:underline mx-1">
+          演示机会与画像均保存在这台设备，可随时
+          <Link href="/onboarding" className="text-brand hover:underline mx-1">
             返回修改画像
           </Link>
           ，结果会重新计算。
         </p>
       </div>
     </div>
+  );
+}
+
+/* ================== 顶部回答摘要：根据这些信息为你判断（模块 0A §7.4） ================== */
+
+/** 从访客草稿中拉取五项摘要，缺失项标"还不能判断" */
+function SummaryCard() {
+  if (typeof window === "undefined") return null;
+  const session = guestSessionService.load();
+  const draft: GuestProfileDraft | undefined = session?.draft;
+
+  const regionText = draft?.regions?.length
+    ? draft.regions
+        .map((r) => [r.province, r.city].filter(Boolean).join("·"))
+        .join("、")
+    : USER_COPY.MATCH_STATUS.UNKNOWN;
+  const educationText = draft?.educationLevel || draft?.degree
+    ? [draft.educationLevel, draft.degree].filter(Boolean).join(" / ")
+    : USER_COPY.MATCH_STATUS.UNKNOWN;
+  const majorText = draft?.majorFullName?.trim() || USER_COPY.MATCH_STATUS.UNKNOWN;
+  const graduationText = draft?.graduationDate || draft?.employmentStatus
+    ? [draft.graduationDate?.slice(0, 7), draft.employmentStatus].filter(Boolean).join(" · ")
+    : USER_COPY.MATCH_STATUS.UNKNOWN;
+  const certText = draft?.teacherCert?.status
+    ? draft.teacherCert.status
+    : USER_COPY.MATCH_STATUS.UNKNOWN;
+
+  const rows: { step: number; label: string; value: string }[] = [
+    { step: 1, label: "地区", value: regionText },
+    { step: 2, label: "学历学位", value: educationText },
+    { step: 3, label: "专业", value: majorText },
+    { step: 4, label: "毕业/就业", value: graduationText },
+    { step: 5, label: "教师资格", value: certText },
+  ];
+
+  return (
+    <Card
+      data-testid="preview-summary"
+      className="border-line bg-surface"
+    >
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-ink">根据这些信息为你判断</h2>
+        <LinkButton href="/onboarding" variant="link" className="text-sm">
+          修改
+        </LinkButton>
+      </div>
+      <dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
+        {rows.map((row) => (
+          <div key={row.step} className="flex gap-2 text-sm">
+            <dt className="shrink-0 text-ink-muted">{row.label}</dt>
+            <dd
+              className={
+                row.value === USER_COPY.MATCH_STATUS.UNKNOWN
+                  ? "text-warn"
+                  : "text-ink"
+              }
+            >
+              {row.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </Card>
   );
 }
 
@@ -421,19 +496,19 @@ function UncoveredRegionsCard({ regionLabels }: { regionLabels: string[] }) {
   return (
     <section
       data-testid="uncovered-regions"
-      className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3"
+      className="rounded-2xl border border-dashed border-line bg-canvas px-4 py-3"
     >
-      <h2 className="text-sm font-semibold text-slate-700">
+      <h2 className="text-sm font-semibold text-ink">
         这些地区当前暂未收录官方公告
       </h2>
-      <p className="mt-1 text-xs text-slate-600">{regionLabels.join("、")}</p>
-      <p className="mt-1.5 text-xs leading-5 text-slate-500">
+      <p className="mt-1 text-xs text-ink-muted">{regionLabels.join("、")}</p>
+      <p className="mt-1.5 text-xs leading-5 text-ink-muted">
         暂未收录不等于当地没有招聘：可能公告尚未发布，或还没进入演示数据的覆盖范围。
         结果是预筛而非官方资格认定，报名前请以当地教育局/人社局官网为准。
       </p>
       <Link
         href="/onboarding"
-        className="mt-2 inline-block text-xs font-medium text-blue-700 underline underline-offset-2"
+        className="mt-2 inline-block text-xs font-medium text-brand underline underline-offset-2"
       >
         修改画像地区
       </Link>
@@ -449,20 +524,20 @@ function LimitationsCard({ limitations }: { limitations: ProfileLimitation[] }) 
     <section
       aria-label="暂未提供信息导致的结果限制"
       data-testid="profile-limitations"
-      className="rounded-2xl border border-amber-200 bg-amber-50/70 px-4 py-3"
+      className="rounded-2xl border border-warn/30 bg-warn-soft/70 px-4 py-3"
     >
-      <h2 className="text-sm font-semibold text-amber-900">
+      <h2 className="text-sm font-semibold text-warn">
         有 {limitations.length} 项信息你暂未提供，结果已相应收窄
       </h2>
       <ul className="mt-2 list-disc space-y-1 pl-5">
         {limitations.map((item) => (
-          <li key={item.step} className="text-xs leading-relaxed text-amber-800">
+          <li key={item.step} className="text-xs leading-relaxed text-warn">
             <span className="font-medium">{item.label}：</span>
             {item.impact}
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-xs text-amber-800">
+      <p className="mt-2 text-xs text-warn">
         缺失信息一律显示「补充信息后判断」，不会被判为不符合；
         <Link href="/onboarding" className="font-medium underline underline-offset-2 ml-1">
           返回补填

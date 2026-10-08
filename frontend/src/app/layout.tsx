@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  // 不限制用户缩放：核心流程在 200% 缩放下仍可完成（模块 0A 无障碍）
 };
 
 export default function RootLayout({

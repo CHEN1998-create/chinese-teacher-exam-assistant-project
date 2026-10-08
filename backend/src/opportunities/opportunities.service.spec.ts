@@ -243,13 +243,14 @@ describe('OpportunitiesService：匹配响应', () => {
       ...response.groups.notEligible,
       ...response.groups.closed,
     ];
-    // 7 个演示报考单元 + 4 个真实监测单元（鄞州1、杭州2、宁波1）
-    expect(all).toHaveLength(11);
+    // 模块 7.5 合规过滤：用户端不返回 AI 初核待人工复核记录（dataset === 'real'）。
+    // 仅 7 个演示报考单元返回，4 个真实监测记录被过滤。
+    expect(all).toHaveLength(7);
 
     const demo = all.filter((u) => u.announcement.dataset === 'demo');
     const real = all.filter((u) => u.announcement.dataset === 'real');
     expect(demo).toHaveLength(7);
-    expect(real).toHaveLength(4);
+    expect(real).toHaveLength(0);
 
     // 7 条演示公告当前版本各一个报考单元（合肥 v1 被 v2 取代，不出现 v1）
     const demoIds = demo.map((u) => u.unit.id);
@@ -284,23 +285,9 @@ describe('OpportunitiesService：匹配响应', () => {
       }
     }
 
-    // 真实记录：全部 AI 初核待复核、落在 closed（截止/预告），证据为 ai_extracted
-    const realIds = real.map((u) => u.unit.id);
-    expect(realIds).toEqual(
-      expect.arrayContaining([
-        'real-yz-2026-chinese-01',
-        'real-hz-202604-fuchun-chinese',
-        'real-hz-202604-gaoxin-chinese',
-        'real-nb-202607-nwsis-chinese',
-      ]),
-    );
-    for (const dto of real) {
-      expect(dto.announcement.reviewStatus).toBe('ai_reviewed_pending');
-      expect(dto.version.officialSource.state).toBe('ai_extracted');
-      expect(dto.gates.some((g) => !g.passed)).toBe(true);
-      expect(dto.unit.sourceRow?.locator).toBeTruthy();
-    }
-    expect(real.every((u) => response.groups.closed.includes(u))).toBe(true);
+    // 模块 7.5：用户端不再返回 real 记录，以下断言验证过滤行为
+    expect(real).toHaveLength(0);
+    // 管理端复核界面可通过独立 API 查看 real 记录（见模块 8）
   });
 
   it('真实公告 id 常量与台账一致（防止台账 id 漂移）', () => {
@@ -415,13 +402,11 @@ describe('OpportunitiesService：关注与状态流转', () => {
     expect(follows.map((f) => f.unitId)).toEqual(['unit-yinzhou-01']);
   });
 
-  it('真实台账单元同样可关注（findCatalogUnit 覆盖 real 数据集）', async () => {
-    const dto = await service.follow(
-      'user-1',
-      'real-nb-202607-nwsis-chinese',
-    );
-    expect(dto.announcementId).toBe(REAL_ANNOUNCEMENT_IDS.ningbo202607);
-    expect(dto.versionId).toBe('real-ningbo-2026-07-v1');
+  it('真实台账单元不可被普通用户关注（模块 7.5 合规过滤）', async () => {
+    // 模块 7.5：普通用户端不允许关注 AI 初核待人工复核记录
+    await expect(
+      service.follow('user-1', 'real-nb-202607-nwsis-chinese'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('设置材料状态：持久化并递增 version；同状态幂等不递增', async () => {

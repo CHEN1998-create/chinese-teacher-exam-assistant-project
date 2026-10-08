@@ -361,7 +361,12 @@ export function buildMatchResponse(
   follows: readonly FollowRecord[],
   now: Date,
 ): MatchResponse {
-  const sorted = sortCandidates([...candidates], profile);
+  // 模块 7.5 合规过滤：普通用户端不返回 AI 初核待人工复核记录（dataset === 'real'）。
+  // 管理端复核界面使用独立 API，不受影响。
+  const publishedCandidates = candidates.filter(
+    (c) => c.announcement.dataset !== 'real',
+  );
+  const sorted = sortCandidates([...publishedCandidates], profile);
   const dtoOf = (c: OpportunityCandidate) =>
     toUnitMatchDTO(c, follows.find((f) => followMatchesUnit(f, c)) ?? null);
 
@@ -430,7 +435,10 @@ export function buildUnitDetail(
   follows: readonly FollowRecord[],
   now: Date,
 ): UnitDetailResponse | null {
-  const candidate = candidates.find((c) => c.unit.id === unitId);
+  // 模块 7.5 合规过滤：普通用户端不返回 AI 初核待人工复核记录（dataset === 'real'）。
+  const candidate = candidates.find(
+    (c) => c.unit.id === unitId && c.announcement.dataset !== 'real',
+  );
   if (!candidate) return null;
   const follow = follows.find((f) => followMatchesUnit(f, candidate)) ?? null;
   const previousVersions = candidate.announcement.versions

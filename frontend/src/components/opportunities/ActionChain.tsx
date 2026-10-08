@@ -86,15 +86,15 @@ export function ActionChain({
   })();
 
   return (
-    <section className="space-y-3 rounded-xl border border-blue-200 bg-blue-50/40 p-4">
+    <section className="space-y-3 rounded-xl border border-brand/30 bg-brand-soft/40 p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="text-sm font-semibold text-slate-900">报考行动</h2>
-        <span className="inline-flex items-center rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200">
+        <h2 className="text-sm font-semibold text-ink">报考行动</h2>
+        <span className="inline-flex items-center rounded-full bg-surface px-2.5 py-0.5 text-xs font-medium text-ink-muted ring-1 ring-line">
           {FOLLOW_STATUS_LABELS[status]}
         </span>
       </div>
 
-      <p className="text-sm text-slate-600">
+      <p className="text-sm text-ink-muted">
         报名{deadlineText} · 材料进度：{progress}
       </p>
 
@@ -109,7 +109,7 @@ export function ActionChain({
       )}
 
       {status === "preparing" && (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-ink-muted">
           {registrationLink
             ? "报名始终在官方入口完成，产品不代理报名。进入官方入口后可在此标记「已报名」。"
             : "这是虚构演示机会，没有真实报名入口；下方状态仅用于体验操作。"}
@@ -117,8 +117,8 @@ export function ActionChain({
       )}
 
       {confirmRegistered && (
-        <div className="flex items-center gap-2 rounded-lg bg-white p-3 ring-1 ring-slate-200">
-          <span className="text-sm text-slate-700">{registrationLink ? "是否已在官方入口完成报名？" : "是否模拟标记为已报名？"}</span>
+        <div className="flex items-center gap-2 rounded-lg bg-surface p-3 ring-1 ring-line">
+          <span className="text-sm text-ink">{registrationLink ? "是否已在官方入口完成报名？" : "是否模拟标记为已报名？"}</span>
           <Button
             size="sm"
             variant="outline"

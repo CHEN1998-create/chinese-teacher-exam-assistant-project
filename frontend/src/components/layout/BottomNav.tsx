@@ -18,9 +18,13 @@ export function BottomNav() {
   return (
     <nav
       aria-label="主导航"
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-surface md:hidden"
+      style={{
+        // 移动端安全区：避开 iPhone 底部 Home Indicator
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }}
     >
-      <div className="flex h-16 items-stretch justify-around border-t border-slate-200">
+      <div className="flex h-16 items-stretch justify-around border-t border-line">
         {PRIMARY_NAV.map((item) => {
           const active = isNavActive(pathname, item.href);
           return (
@@ -31,8 +35,8 @@ export function BottomNav() {
               className={cn(
                 "-mt-px flex flex-1 flex-col items-center justify-center gap-1 border-t-2 transition-colors",
                 active
-                  ? "border-blue-600 text-blue-700"
-                  : "border-transparent text-slate-500 hover:text-slate-800",
+                  ? "border-brand text-brand"
+                  : "border-transparent text-ink-muted hover:text-ink"
               )}
             >
               <NavIcon id={item.id} className="h-6 w-6" />

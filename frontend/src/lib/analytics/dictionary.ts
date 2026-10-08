@@ -238,6 +238,63 @@ export const EVENT_DICTIONARY: EventDictionaryEntry[] = [
     properties: "模块枚举、存储键名、错误码；不含报错原文",
     core: false,
   },
+  // —— v6.1 模块 0A 页面体验优化补缺口事件（不含个人信息） ——
+  {
+    type: "home_start_match_clicked",
+    label: "首页开始匹配",
+    trigger: "首页点击「开始匹配」主按钮",
+    properties: "无；不含画像正文",
+    core: false,
+  },
+  {
+    type: "learn_opened",
+    label: "打开 30 秒说明",
+    trigger: "从首页「先了解我们怎么判断」入口进入 /learn",
+    properties: "无",
+    core: false,
+  },
+  {
+    type: "learn_start_match_clicked",
+    label: "从说明开始匹配",
+    trigger: "在 /learn 页面点击「开始匹配」",
+    properties: "无",
+    core: false,
+  },
+  {
+    type: "profile_resumed",
+    label: "恢复上次进度",
+    trigger: "首页因访客草稿进行中而 replace 到 /onboarding",
+    properties: "无",
+    core: false,
+  },
+  {
+    type: "preview_summary_edited",
+    label: "回答摘要修改",
+    trigger: "结果页顶部摘要中点击「修改」回到对应问答组",
+    properties: "步号 step；不含答案正文",
+    core: false,
+  },
+  {
+    type: "preview_revealed",
+    label: "初步结果曝光",
+    trigger: "结果页首次渲染出至少一个机会",
+    properties: "优先机会数；不含机会正文",
+    core: false,
+  },
+  {
+    type: "priority_opportunity_viewed",
+    label: "查看优先机会",
+    trigger: "结果页/列表页点击查看优先机会",
+    properties: "机会单元ID",
+    core: false,
+  },
+  {
+    type: "schedule_action_started",
+    label: "日程行动",
+    trigger: "日程页点击下一项行动按钮",
+    properties: "机会单元ID、行动类型枚举",
+    core: false,
+  },
 ];
 
 export type MetricCategory = "user_value" | "quality_ops" | "stock" | "trial";

@@ -8,7 +8,9 @@ export function LoadingSpinner({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   return (
     <div className="flex items-center justify-center p-8">
       <div
-        className={`${sizes[size]} border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin`}
+        className={`${sizes[size]} border-2 border-brand-soft border-t-brand rounded-full animate-spin`}
+        role="status"
+        aria-label="加载中"
       />
     </div>
   );
@@ -18,19 +20,23 @@ export function LoadingPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
       <LoadingSpinner size="lg" />
-      <p className="text-slate-500">加载中...</p>
+      <p className="text-sm text-ink-muted">正在获取……</p>
     </div>
   );
 }
 
 export function LoadingCard() {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-6 animate-pulse">
-      <div className="h-4 bg-slate-200 rounded w-1/4 mb-4"></div>
+    <div
+      className="bg-surface rounded-xl border border-line p-6 animate-pulse"
+      role="status"
+      aria-label="加载中"
+    >
+      <div className="h-4 bg-brand-soft/60 rounded w-1/4 mb-4"></div>
       <div className="space-y-3">
-        <div className="h-3 bg-slate-200 rounded"></div>
-        <div className="h-3 bg-slate-200 rounded w-5/6"></div>
-        <div className="h-3 bg-slate-200 rounded w-4/6"></div>
+        <div className="h-3 bg-brand-soft/60 rounded"></div>
+        <div className="h-3 bg-brand-soft/60 rounded w-5/6"></div>
+        <div className="h-3 bg-brand-soft/60 rounded w-4/6"></div>
       </div>
     </div>
   );

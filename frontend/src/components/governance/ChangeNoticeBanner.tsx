@@ -23,17 +23,17 @@ export function ChangeNoticeBanner({ types }: { types: NotificationType[] }) {
         <div
           key={item.id}
           role="status"
-          className="rounded-xl border border-amber-200 bg-amber-50 p-4"
+          className="rounded-xl border border-warn/30 bg-warn-soft p-4"
         >
           <div className="flex items-start gap-3">
             <span className="text-lg leading-none">{item.type === "exam_change" ? "📢" : "🔁"}</span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-amber-900">{item.title}</p>
-              <p className="mt-1 text-sm leading-relaxed text-amber-800">{item.body}</p>
+              <p className="mt-1 text-sm leading-relaxed text-warn">{item.body}</p>
               {item.nextSteps && item.nextSteps.length > 0 && (
                 <div className="mt-2">
-                  <p className="text-xs font-medium text-amber-800">建议你接下来：</p>
-                  <ul className="mt-1 list-disc space-y-0.5 pl-5 text-xs text-amber-700">
+                  <p className="text-xs font-medium text-warn">建议你接下来：</p>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-5 text-xs text-warn">
                     {item.nextSteps.map((step, i) => (
                       <li key={i}>{step}</li>
                     ))}
@@ -44,7 +44,7 @@ export function ChangeNoticeBanner({ types }: { types: NotificationType[] }) {
             <button
               type="button"
               onClick={() => notificationService.markRead(item.id)}
-              className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100"
+              className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-warn hover:bg-warn-soft"
             >
               我知道了
             </button>

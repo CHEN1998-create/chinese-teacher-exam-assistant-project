@@ -147,13 +147,14 @@ export function buildListViewModel(
   const needInfoCount = groups.needInfo.reduce((sum, g) => sum + g.count, 0);
   const validCount =
     groups.preliminary.length + needInfoCount + groups.manualReview.length;
-  // 真实监测卡片与演示卡片分区展示；未复核/已截止/预告的真实记录不计有效机会
-  const realMonitored = groups.closed.filter(
-    (u) => u.announcement.dataset === "real",
-  );
+  // 模块 7.5 合规过滤：用户端不显示 AI 初核待人工复核记录（dataset === "real"）。
+  // 后端 PUBLISHED_ANNOUNCEMENTS 仍包含 real 记录（用于管理端复核），
+  // 这里在前端兜底过滤：closed 不包含 real，realMonitored 字段保留为稳定类型但永远为空。
+  // 真正解决需后端在用户端 API 加 status 过滤（见最终报告"后续任务"）。
   const closed = groups.closed.filter(
     (u) => u.announcement.dataset !== "real",
   );
+  const realMonitored: UnitMatchDTO[] = [];
   // 地区偏好不重叠与资格不符合分离（仅前端叙事拆分，后端分组结构不变）
   const regionOutOfScope = groups.notEligible.filter(isRegionOnlyMismatch);
   const notEligible = groups.notEligible.filter(

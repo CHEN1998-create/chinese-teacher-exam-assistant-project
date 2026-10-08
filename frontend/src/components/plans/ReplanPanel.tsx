@@ -27,13 +27,13 @@ const ACTION_VARIANT: Record<TaskAdjustmentAction, "success" | "warning" | "info
 
 function TaskBrief({ task }: { task: PlanTask | null }) {
   if (!task) {
-    return <span className="text-sm text-slate-500">已移出计划（不安排）</span>;
+    return <span className="text-sm text-ink-muted">已移出计划（不安排）</span>;
   }
   return (
-    <span className="text-sm text-slate-700">
+    <span className="text-sm text-ink">
       {task.title}
-      <span className="text-slate-400"> · {formatTime(task.estimatedTime)}</span>
-      {task.chapterTitle && <span className="text-slate-400"> · {task.chapterTitle}</span>}
+      <span className="text-ink-muted"> · {formatTime(task.estimatedTime)}</span>
+      {task.chapterTitle && <span className="text-ink-muted"> · {task.chapterTitle}</span>}
     </span>
   );
 }
@@ -43,12 +43,12 @@ function AdjustmentRow({ adjustment }: { adjustment: TaskAdjustment }) {
   const a = adjustment;
   const moved = a.toDate !== a.date;
   return (
-    <div className="p-3 rounded-lg border border-slate-200 bg-white space-y-2">
+    <div className="p-3 rounded-lg border border-line bg-surface space-y-2">
       <div className="flex items-center gap-2 flex-wrap">
         <Badge variant={ACTION_VARIANT[a.action]}>{TASK_ADJUSTMENT_ACTION_LABELS[a.action]}</Badge>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-ink-muted">
           {formatDateWithWeekday(a.date)}
-          {moved && <span className="text-blue-600"> → 顺延至 {formatDateWithWeekday(a.toDate)}</span>}
+          {moved && <span className="text-brand"> → 顺延至 {formatDateWithWeekday(a.toDate)}</span>}
           {a.after?.needsConfirmation && (
             <Badge variant="warning">待重新确认</Badge>
           )}
@@ -56,22 +56,22 @@ function AdjustmentRow({ adjustment }: { adjustment: TaskAdjustment }) {
       </div>
 
       <div className="grid gap-1.5 md:grid-cols-2">
-        <div className="p-2 rounded bg-slate-50">
-          <p className="text-xs text-slate-400 mb-0.5">调整前</p>
+        <div className="p-2 rounded bg-canvas">
+          <p className="text-xs text-ink-muted mb-0.5">调整前</p>
           <TaskBrief task={a.before} />
         </div>
-        <div className={`p-2 rounded ${a.after ? "bg-blue-50" : "bg-rose-50"}`}>
-          <p className="text-xs text-slate-400 mb-0.5">调整后</p>
+        <div className={`p-2 rounded ${a.after ? "bg-brand-soft" : "bg-rose-50"}`}>
+          <p className="text-xs text-ink-muted mb-0.5">调整后</p>
           <TaskBrief task={a.after} />
         </div>
       </div>
 
-      <p className="text-sm text-slate-600">
-        <span className="text-slate-400">调整原因：</span>
+      <p className="text-sm text-ink-muted">
+        <span className="text-ink-muted">调整原因：</span>
         {a.reason}
       </p>
       {a.refs.length > 0 && (
-        <p className="text-xs text-slate-400">依据：{a.refs.map((r) => r.label).join("；")}</p>
+        <p className="text-xs text-ink-muted">依据：{a.refs.map((r) => r.label).join("；")}</p>
       )}
     </div>
   );
@@ -163,7 +163,7 @@ export function ReplanPanel({ targetId, activePlan }: ReplanPanelProps) {
         {error && <div className="mb-3 p-2.5 bg-rose-50 text-rose-700 rounded-lg text-sm">{error}</div>}
         <div className="space-y-2 mt-3">
           {draftAdjustments.length === 0 ? (
-            <p className="text-sm text-slate-500">本次调整没有需要调整的任务。</p>
+            <p className="text-sm text-ink-muted">本次调整没有需要调整的任务。</p>
           ) : (
             draftAdjustments.map((a) => <AdjustmentRow key={a.id} adjustment={a} />)
           )}
@@ -176,7 +176,7 @@ export function ReplanPanel({ targetId, activePlan }: ReplanPanelProps) {
             放弃草稿
           </Button>
         </div>
-        <p className="text-xs text-slate-400 mt-2">
+        <p className="text-xs text-ink-muted mt-2">
           确认后 v{activePlan.version} 保留为历史版本，可在版本历史中对比；今日任务模块将读取新版本。
         </p>
       </Card>
@@ -207,23 +207,23 @@ export function ReplanPanel({ targetId, activePlan }: ReplanPanelProps) {
 
       {open && triggers && (
         <div className="mt-3 space-y-2">
-          <p className="text-sm font-medium text-slate-700">
+          <p className="text-sm font-medium text-ink">
             检测到 {triggers.length} 项触发信号：
           </p>
           {triggers.length === 0 ? (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-ink-muted">
               未检测到自动触发信号（时间变化、未完成任务、重复错因、资料不适合、考情变化）；
               你仍可以主动生成调整草稿。
             </p>
           ) : (
             triggers.map((t, i) => (
-              <div key={i} className="p-3 rounded-lg bg-amber-50 border border-amber-100">
+              <div key={i} className="p-3 rounded-lg bg-warn-soft border border-warn/30">
                 <div className="flex items-center gap-2 mb-1">
                   <Badge variant="warning">{REPLAN_TRIGGER_LABELS[t.type]}</Badge>
                 </div>
-                <p className="text-sm text-amber-800">{t.detail}</p>
+                <p className="text-sm text-warn">{t.detail}</p>
                 {t.refs.length > 0 && (
-                  <p className="text-xs text-amber-600 mt-1">
+                  <p className="text-xs text-warn mt-1">
                     依据：{t.refs.map((r) => r.label).join("；")}
                   </p>
                 )}
@@ -238,7 +238,7 @@ export function ReplanPanel({ targetId, activePlan }: ReplanPanelProps) {
               取消
             </Button>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-ink-muted">
             调整规则：剩余任务总时长不超过可用时间；未完成欠账不会全部堆到第二天；时间不足时优先保留关键模块与最低任务；资料不适合优先替换；重复错因降低难度；生成结果先作为草稿，确认后生效。
           </p>
         </div>

@@ -95,23 +95,23 @@ export function SupplementForm({
   if (unknownDims.length === 0 && manualDims.length === 0) return null;
 
   return (
-    <section className="space-y-4 rounded-xl border border-amber-200 bg-amber-50/40 p-4">
+    <section className="space-y-4 rounded-xl border border-warn/30 bg-warn-soft/40 p-4">
       <div>
-        <h3 className="text-sm font-semibold text-slate-800">
+        <h3 className="text-sm font-semibold text-ink">
           补充信息后重新判断
         </h3>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-ink-muted">
           以下信息只在需要时按机会补问；留空表示暂不提供，该条件会继续保持“待确认”，
           不会被判定为不符合。保存后立即用新画像重新计算。
         </p>
       </div>
 
       {manualDims.length > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-white p-3">
-          <p className="text-xs font-semibold text-amber-700">
+        <div className="rounded-lg border border-warn/30 bg-surface p-3">
+          <p className="text-xs font-semibold text-warn">
             需向招聘单位人工确认（补充资料不能替代确认）
           </p>
-          <ul className="mt-1.5 list-disc pl-5 text-xs text-slate-600">
+          <ul className="mt-1.5 list-disc pl-5 text-xs text-ink-muted">
             {manualDims.map((d) => (
               <li key={d.requirementId}>
                 {dimensionLabel(d.dimension)}：{d.reason}
@@ -200,7 +200,7 @@ export function SupplementForm({
               }))
             }
           />
-          <p className="mt-1 text-sm text-slate-500">{d.reason}</p>
+          <p className="mt-1 text-sm text-ink-muted">{d.reason}</p>
         </div>
       ))}
 
@@ -209,7 +209,7 @@ export function SupplementForm({
           <Button size="sm" disabled={saving} onClick={handleSave}>
             {saving ? "保存并重新计算中…" : "保存并重新判断"}
           </Button>
-          <span className="text-[11px] text-slate-400">
+          <span className="text-[11px] text-ink-muted">
             信息只用于资格匹配，不会发送给招聘单位。
           </span>
         </div>

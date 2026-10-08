@@ -207,7 +207,7 @@ describe("buildListViewModel：四类结果的列表叙事", () => {
     expect(text).toMatch(/\d{2}:\d{2}/);
   });
 
-  it("真实监测记录从演示已截止中分离到 realMonitored，且不计有效机会", () => {
+  it("真实监测记录被合规过滤：不进 closed、不进 realMonitored，不计有效机会（模块 7.5）", () => {
     const real = makeUnit("real-yz-2026-chinese-01", "preliminary_eligible", {
       announcement: {
         id: "real-yinzhou-2026-autumn",
@@ -268,9 +268,9 @@ describe("buildListViewModel：四类结果的列表叙事", () => {
     response.groups.closed = [real, demoClosed];
 
     const view = buildListViewModel(response);
-    expect(view.realMonitored.map((u) => u.unit.id)).toEqual([
-      "real-yz-2026-chinese-01",
-    ]);
+    // 模块 7.5：用户端不显示 AI 初核待人工复核记录（real）。
+    // list-view 把 real 从 closed 拆出后丢弃，realMonitored 永远为空。
+    expect(view.realMonitored).toEqual([]);
     expect(view.closed.map((u) => u.unit.id)).toEqual(["unit-wenzhou-01"]);
     expect(view.validCount).toBe(0);
     expect(view.coverage.openOpportunityCount).toBe(0);

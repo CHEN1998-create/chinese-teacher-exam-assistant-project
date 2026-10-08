@@ -26,9 +26,9 @@ const BACKEND_SEVERITY_META: Record<
   NotificationDTO["severity"],
   { icon: string; label: string; accent: string }
 > = {
-  must_handle: { icon: "⚠️", label: "必须处理", accent: "text-red-600" },
-  suggest_handle: { icon: "📌", label: "建议处理", accent: "text-amber-600" },
-  info: { icon: "ℹ️", label: "普通信息", accent: "text-slate-500" },
+  must_handle: { icon: "⚠️", label: "必须处理", accent: "text-danger" },
+  suggest_handle: { icon: "📌", label: "建议处理", accent: "text-warn" },
+  info: { icon: "ℹ️", label: "普通信息", accent: "text-ink-muted" },
 };
 
 export function NotificationCenter() {
@@ -78,24 +78,24 @@ export function NotificationCenter() {
         type="button"
         aria-label={`通知中心，未读 ${unreadCount} 条`}
         onClick={() => setOpen((v) => !v)}
-        className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+        className="relative inline-flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-surface text-ink-muted hover:bg-canvas"
       >
         <span className="text-lg leading-none">🔔</span>
         {unreadCount > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+          <span className="absolute -top-1.5 -right-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-white">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 z-40 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
-          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
-            <p className="text-sm font-semibold text-slate-900">通知</p>
+        <div className="absolute right-0 z-40 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-line bg-surface shadow-lg">
+          <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
+            <p className="text-sm font-semibold text-ink">通知</p>
             <button
               type="button"
               onClick={markAllRead}
-              className="text-xs text-blue-600 hover:text-blue-700"
+              className="text-xs text-brand hover:text-brand"
             >
               全部已读
             </button>
@@ -103,11 +103,11 @@ export function NotificationCenter() {
 
           <div className="max-h-96 overflow-y-auto">
             {items.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-slate-400">
+              <p className="px-4 py-8 text-center text-sm text-ink-muted">
                 暂无通知。没有重要考情变化时不会发送提醒。
               </p>
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-line">
                 {items.slice(0, 30).map((row) =>
                   row.source === "local" ? (
                     <LocalNotificationRow
@@ -128,16 +128,16 @@ export function NotificationCenter() {
             )}
           </div>
 
-          <div className="border-t border-slate-100 px-4 py-2.5 space-y-1">
+          <div className="border-t border-line px-4 py-2.5 space-y-1">
             {reminderHint && (
-              <p className="text-[11px] text-slate-400">{reminderHint}</p>
+              <p className="text-[11px] text-ink-muted">{reminderHint}</p>
             )}
             <button
               type="button"
               onClick={simulateReminder}
-              className="text-xs text-slate-500 hover:text-slate-700"
+              className="text-xs text-ink-muted hover:text-ink"
             >
-              模拟今日学习提醒（Mock）
+              模拟今日学习提醒
             </button>
           </div>
         </div>
@@ -165,25 +165,25 @@ function LocalNotificationRow({
           notificationService.markRead(item.id);
           onOpen();
         }}
-        className={`flex gap-3 px-4 py-3 hover:bg-slate-50 ${unread ? "bg-blue-50/40" : ""}`}
+        className={`flex gap-3 px-4 py-3 hover:bg-canvas ${unread ? "bg-brand-soft/40" : ""}`}
       >
         <span className="mt-0.5 text-base leading-none">{meta.icon}</span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="truncate text-sm font-medium text-slate-900">{item.title}</p>
+            <p className="truncate text-sm font-medium text-ink">{item.title}</p>
             {unread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />}
           </div>
-          <p className="mt-0.5 line-clamp-3 text-xs leading-relaxed text-slate-500">
+          <p className="mt-0.5 line-clamp-3 text-xs leading-relaxed text-ink-muted">
             {item.body}
           </p>
           {item.nextSteps && item.nextSteps.length > 0 && (
-            <ul className="mt-1 list-disc pl-4 text-[11px] text-slate-500">
+            <ul className="mt-1 list-disc pl-4 text-[11px] text-ink-muted">
               {item.nextSteps.slice(0, 3).map((step, i) => (
                 <li key={i}>{step}</li>
               ))}
             </ul>
           )}
-          <p className="mt-1 text-[11px] text-slate-400">{formatDateTime(item.createdAt)}</p>
+          <p className="mt-1 text-[11px] text-ink-muted">{formatDateTime(item.createdAt)}</p>
         </div>
       </Link>
     </li>
@@ -212,21 +212,21 @@ function BackendNotificationRow({
           onOpen();
         }}
         className={cn(
-          "flex gap-3 px-4 py-3 hover:bg-slate-50",
-          unread && "bg-blue-50/40",
+          "flex gap-3 px-4 py-3 hover:bg-canvas",
+          unread && "bg-brand-soft/40",
         )}
       >
         <span className="mt-0.5 text-base leading-none">{meta.icon}</span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className="truncate text-sm font-medium text-slate-900">{item.title}</p>
+            <p className="truncate text-sm font-medium text-ink">{item.title}</p>
             <span className={cn("text-[11px] font-medium", meta.accent)}>{meta.label}</span>
             {unread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />}
           </div>
-          <p className="mt-0.5 line-clamp-3 text-xs leading-relaxed text-slate-500">
+          <p className="mt-0.5 line-clamp-3 text-xs leading-relaxed text-ink-muted">
             {item.body}
           </p>
-          <p className="mt-1 text-[11px] text-slate-400">{formatDateTime(item.createdAt)}</p>
+          <p className="mt-1 text-[11px] text-ink-muted">{formatDateTime(item.createdAt)}</p>
         </div>
       </Link>
     </li>

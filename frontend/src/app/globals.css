@@ -1,45 +1,86 @@
 @import "tailwindcss";
 
+/*
+ * 设计 Token（v6.1 模块 0A 视觉系统：墨蓝 + 暖灰，80 / 15 / 5 用色比例）
+ *
+ * - 原始值集中在 :root，便于跨场景复用与平滑迁移；
+ * - 通过 @theme inline 暴露为 Tailwind 工具类（bg-canvas / bg-surface /
+ *   text-ink / text-ink-muted / bg-brand / bg-brand-soft / border-line /
+ *   bg-success-soft / bg-warn-soft / bg-danger-soft 等）；
+ * - 旧变量（--background / --primary 等）同步更新到新色值，作为历史引用的
+ *   兼容层，避免引用 var(--primary) 的旧代码意外回到旧蓝；
+ * - 国内网络基线：不加载任何网络字体、不引入远程图标，仅设备自带字体。
+ */
 :root {
-  --background: #f8fafc;
-  --foreground: #1e293b;
-  --primary: #2563eb;
-  --primary-light: #dbeafe;
-  --primary-dark: #1d4ed8;
-  --success: #059669;
-  --success-light: #d1fae5;
-  --warning: #d97706;
-  --warning-light: #fef3c7;
-  --danger: #dc2626;
-  --danger-light: #fee2e2;
-  --info: #0891b2;
-  --info-light: #cffafe;
-  --muted: #64748b;
-  --card: #ffffff;
-  --border: #e2e8f0;
+  /* 主语义层 */
+  --color-canvas: #f7f7f5;       /* 页面背景：暖灰 */
+  --color-surface: #ffffff;       /* 内容表面：白 */
+  --color-ink: #1d292f;           /* 主文字：墨蓝近黑 */
+  --color-ink-muted: #5f6b72;     /* 次文字：暖灰 */
+  --color-brand: #2f566d;          /* 品牌主色：墨蓝 */
+  --color-brand-strong: #244657;  /* 品牌悬停：更深一档 */
+  --color-brand-soft: #eaf0f3;    /* 品牌浅色：背景与标签 */
+  --color-line: #e3e7e8;          /* 默认边框：暖灰 */
+  --color-success: #3f6b55;        /* 成功：墨绿 */
+  --color-success-soft: #e6efe9;
+  --color-warn: #8a6428;           /* 提醒：琥珀 */
+  --color-warn-soft: #f5ecdb;
+  --color-danger: #a54646;         /* 风险：砖红 */
+  --color-danger-soft: #f3e3e3;
+  --color-info: #2f566d;           /* 信息：与品牌一致 */
+  --color-info-soft: #eaf0f3;
+
+  /* 兼容层：保留旧变量名，指向新色值 */
+  --background: var(--color-canvas);
+  --foreground: var(--color-ink);
+  --primary: var(--color-brand);
+  --primary-light: var(--color-brand-soft);
+  --primary-dark: var(--color-brand-strong);
+  --success: var(--color-success);
+  --success-light: var(--color-success-soft);
+  --warning: var(--color-warn);
+  --warning-light: var(--color-warn-soft);
+  --danger: var(--color-danger);
+  --danger-light: var(--color-danger-soft);
+  --info: var(--color-info);
+  --info-light: var(--color-info-soft);
+  --muted: var(--color-ink-muted);
+  --card: var(--color-surface);
+  --border: var(--color-line);
   --radius: 0.75rem;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-light: var(--primary-light);
-  --color-primary-dark: var(--primary-dark);
-  --color-success: var(--success);
-  --color-success-light: var(--success-light);
-  --color-warning: var(--warning);
-  --color-warning-light: var(--warning-light);
-  --color-danger: var(--danger);
-  --color-danger-light: var(--danger-light);
-  --color-info: var(--info);
-  --color-info-light: var(--info-light);
-  --color-muted: var(--muted);
-  --color-card: var(--card);
-  --color-border: var(--border);
-  /* 系统字体栈：不加载任何网络字体，覆盖 Windows / macOS / iOS /
-     Android / 常见 Linux 发行版及鸿蒙设备；全部为设备自带字体名，
-     不会发起网络请求（模块 0A 国内网络基线）。 */
+  --color-canvas: var(--color-canvas);
+  --color-surface: var(--color-surface);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-brand: var(--color-brand);
+  --color-brand-strong: var(--color-brand-strong);
+  --color-brand-soft: var(--color-brand-soft);
+  --color-line: var(--color-line);
+  --color-success: var(--color-success);
+  --color-success-soft: var(--color-success-soft);
+  --color-warn: var(--color-warn);
+  --color-warn-soft: var(--color-warn-soft);
+  --color-danger: var(--color-danger);
+  --color-danger-soft: var(--color-danger-soft);
+  --color-info: var(--color-info);
+  --color-info-soft: var(--color-info-soft);
+
+  /* 兼容层：让旧名工具类（bg-primary / text-muted / bg-success-light 等）
+     继续可用，并指向新色。 */
+  --color-background: var(--color-canvas);
+  --color-foreground: var(--color-ink);
+  --color-primary: var(--color-brand);
+  --color-primary-light: var(--color-brand-soft);
+  --color-primary-dark: var(--color-brand-strong);
+  --color-muted: var(--color-ink-muted);
+  --color-card: var(--color-surface);
+  --color-border: var(--color-line);
+
+  /* 系统字体栈：覆盖 Windows / macOS / iOS / Android / 鸿蒙 / 常见 Linux；
+     全部为设备自带字体名，不发起任何网络请求（模块 0A 国内网络基线）。 */
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC",
     "Noto Sans CJK SC", "WenQuanYi Micro Hei", "Helvetica Neue", Arial,
@@ -49,8 +90,8 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-canvas);
+  color: var(--color-ink);
   font-family: var(--font-sans);
 }
 
@@ -61,7 +102,7 @@ samp {
   font-family: var(--font-mono);
 }
 
-/* Custom scrollbar */
+/* 自定义滚动条：低调、不喧宾夺主 */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -72,10 +113,22 @@ samp {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #cbd5d8;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #a8b3b8;
+}
+
+/* 尊重用户的减少动效偏好（核心交互仍可用） */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

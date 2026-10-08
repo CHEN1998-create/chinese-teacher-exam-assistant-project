@@ -84,24 +84,24 @@ export function DiagnosisPanel({
           ).map((cat, index) => (
             <Card key={cat.key} padding="sm">
               <div className="flex items-start gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-700">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-soft text-xs font-semibold text-brand">
                   {index + 1}
                 </span>
                 <div>
-                  <p className="text-sm font-medium text-slate-900">{cat.label}</p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-slate-500">{cat.desc}</p>
+                  <p className="text-sm font-medium text-ink">{cat.label}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-ink-muted">{cat.desc}</p>
                 </div>
               </div>
             </Card>
           ))}
           {readiness && !readiness.hasGeneralPaper && (
-            <p className="px-1 text-xs text-slate-400">
+            <p className="px-1 text-xs text-ink-muted">
               「教育综合知识教材」当前未列为必需：现有官方考情未确认笔试含教育综合科目；若考情更新，
               重新计算后清单会自动调整。
             </p>
           )}
         </div>
-        <p className="px-1 text-xs text-slate-400">
+        <p className="px-1 text-xs text-ink-muted">
           这里只给出资料类别，不提供购买链接，也不按平台热度或商业合作做推荐。
         </p>
         {target && readiness && (
@@ -132,12 +132,12 @@ export function DiagnosisPanel({
       {readiness && !readiness.complete && <EvidenceWarning readiness={readiness} />}
 
       {stale && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warn/30 bg-warn-soft p-3">
           <div className="flex items-start gap-2">
-            <span className="text-amber-600">⚠</span>
+            <span className="text-warn">⚠</span>
             <div>
-              <p className="text-sm font-medium text-amber-800">分析可能已过时</p>
-              <p className="text-xs text-amber-700">
+              <p className="text-sm font-medium text-warn">分析可能已过时</p>
+              <p className="text-xs text-warn">
                 考试、考情、资料或准备情况在上次分析后发生了变化（包括切换当前考试），请重新计算。
               </p>
             </div>
@@ -151,9 +151,9 @@ export function DiagnosisPanel({
       {/* 结论总览：缺什么、薄弱什么 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Card padding="sm">
-          <p className="text-sm font-semibold text-slate-900">当前缺少的模块</p>
+          <p className="text-sm font-semibold text-ink">当前缺少的模块</p>
           {snapshot.missingModules.length === 0 ? (
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-ink-muted">
               必需模块都已有可用（继续使用或部分使用）的资料覆盖。
             </p>
           ) : (
@@ -168,9 +168,9 @@ export function DiagnosisPanel({
           )}
         </Card>
         <Card padding="sm">
-          <p className="text-sm font-semibold text-slate-900">能力薄弱项（来自自评/成绩/手动标注）</p>
+          <p className="text-sm font-semibold text-ink">能力薄弱项（来自自评/成绩/手动标注）</p>
           {snapshot.weakModules.length === 0 ? (
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-ink-muted">
               暂未识别到薄弱模块：可在「准备情况」页补充自评与最近成绩。
             </p>
           ) : (
@@ -191,21 +191,21 @@ export function DiagnosisPanel({
       {/* 冲突取舍 */}
       {snapshot.conflictGroups.length > 0 && (
         <Card padding="sm">
-          <p className="text-sm font-semibold text-slate-900">多套资料取舍</p>
+          <p className="text-sm font-semibold text-ink">多套资料取舍</p>
           <div className="mt-2 space-y-2">
             {snapshot.conflictGroups.map((group) => (
-              <div key={group.module} className="rounded-lg border border-slate-200 p-2.5">
-                <p className="text-xs font-medium text-slate-800">
+              <div key={group.module} className="rounded-lg border border-line p-2.5">
+                <p className="text-xs font-medium text-ink">
                   {group.moduleLabel}：保留《{materials.find((m) => m.id === group.keepMaterialId)?.name ?? "当前资料"}》
                 </p>
                 <ul className="mt-1 space-y-0.5">
                   {group.paused.map((p) => (
-                    <li key={p.materialId} className="text-xs text-slate-500">
+                    <li key={p.materialId} className="text-xs text-ink-muted">
                       · 《{materials.find((m) => m.id === p.materialId)?.name ?? "已删除资料"}》本周暂缓 —— {p.reason}
                     </li>
                   ))}
                 </ul>
-                <p className="mt-1 text-xs text-slate-400">{group.advice}</p>
+                <p className="mt-1 text-xs text-ink-muted">{group.advice}</p>
               </div>
             ))}
           </div>
@@ -219,26 +219,26 @@ export function DiagnosisPanel({
           return (
             <Card key={diagnosis.id} padding="sm">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-sm font-semibold text-ink">
                   {material?.name ?? "已删除的资料"}
                 </p>
                 <Badge variant={RECOMMENDATION_VARIANT[diagnosis.recommendation]}>
                   {MATERIAL_RECOMMENDATION_LABELS[diagnosis.recommendation]}
                 </Badge>
               </div>
-              <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{diagnosis.reason}</p>
+              <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">{diagnosis.reason}</p>
               <div className="mt-2 space-y-1.5">
                 {diagnosis.items.map((item) => (
-                  <div key={item.module} className="rounded-lg border border-slate-100 bg-slate-50/60 p-2">
+                  <div key={item.module} className="rounded-lg border border-line bg-canvas/60 p-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-medium text-slate-800">{item.moduleLabel}</span>
+                      <span className="text-xs font-medium text-ink">{item.moduleLabel}</span>
                       <Badge variant={RECOMMENDATION_VARIANT[item.recommendation]}>
                         {MATERIAL_RECOMMENDATION_LABELS[item.recommendation]}
                       </Badge>
                     </div>
-                    <p className="mt-1 text-xs leading-relaxed text-slate-600">{item.reason}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-ink-muted">{item.reason}</p>
                     {item.relatedChapterTitles.length > 0 && (
-                      <p className="mt-0.5 text-[11px] text-slate-400">
+                      <p className="mt-0.5 text-[11px] text-ink-muted">
                         相关章节：{item.relatedChapterTitles.join("、")}
                       </p>
                     )}
@@ -248,7 +248,7 @@ export function DiagnosisPanel({
               {diagnosis.warnings.length > 0 && (
                 <div className="mt-2 space-y-0.5">
                   {diagnosis.warnings.map((w) => (
-                    <p key={w} className="text-xs text-red-600">
+                    <p key={w} className="text-xs text-danger">
                       ⚠ {w}
                     </p>
                   ))}
@@ -260,7 +260,7 @@ export function DiagnosisPanel({
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-        <p className="text-[11px] text-slate-400">
+        <p className="text-[11px] text-ink-muted">
           分析时间：{new Date(snapshot.diagnosedAt).toLocaleString("zh-CN")} ·
           入口状态：{inventoryStatus === "none" ? "还没有资料" : inventoryStatus === "single" ? "一套资料" : "多套资料"}
         </p>
@@ -268,16 +268,16 @@ export function DiagnosisPanel({
           {stale ? "重新计算" : "按最新信息再算一次"}
         </Button>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
     </div>
   );
 }
 
 function EvidenceWarning({ readiness }: { readiness: EvidenceReadiness }) {
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
-      <p className="text-sm font-medium text-amber-800">考情尚未完全核对，分析结果可能不完整</p>
-      <p className="mt-1 text-xs leading-relaxed text-amber-700">
+    <div className="rounded-xl border border-warn/30 bg-warn-soft p-3">
+      <p className="text-sm font-medium text-warn">考情尚未完全核对，分析结果可能不完整</p>
+      <p className="mt-1 text-xs leading-relaxed text-warn">
         以下高影响字段还没有从官方公告核对：
         {readiness.pendingFields.map((f) => EVIDENCE_TYPE_LABELS[f]).join("、")}
         。当前分析先按已有考情与你的资料信息给出，考情核对后请重新计算。

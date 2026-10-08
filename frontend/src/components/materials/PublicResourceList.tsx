@@ -33,7 +33,7 @@ export function PublicResourceList() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-3 text-xs leading-relaxed text-blue-800">
+      <div className="rounded-xl border border-brand/30 bg-brand-soft/60 p-3 text-xs leading-relaxed text-brand-strong">
         这里是与你个人资料<strong>完全分开</strong>的公共资源库，仅展示来源可核实、权利状态明确、链接已核验的资源；
         第三方资源只提供原始链接与必要摘要。停用、失效或超过复核周期的资源不在此展示。
       </div>
@@ -60,14 +60,14 @@ function ResourceRow({ resource }: { resource: ResourceItem }) {
   return (
     <Card padding="sm">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm font-semibold text-slate-900">{resource.title}</p>
+        <p className="text-sm font-semibold text-ink">{resource.title}</p>
         <Badge variant="info">{RESOURCE_TYPE_LABELS[resource.resourceType]}</Badge>
         <Badge variant={RIGHTS_VARIANT[resource.rightsStatus]}>
           {RIGHTS_STATUS_LABELS[resource.rightsStatus]}
         </Badge>
       </div>
       {resource.description && (
-        <p className="mt-1.5 text-xs leading-relaxed text-slate-600">{resource.description}</p>
+        <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">{resource.description}</p>
       )}
       <div className="mt-2 flex flex-wrap gap-1.5">
         {resource.modules.map((key) => (
@@ -76,7 +76,7 @@ function ResourceRow({ resource }: { resource: ResourceItem }) {
           </Badge>
         ))}
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-muted">
         <span>来源：{resource.sourceName}</span>
         <span>适用范围：{scopeSummary(resource)}</span>
         <span>最近复核：{new Date(resource.lastReviewedAt).toLocaleDateString("zh-CN")}</span>
@@ -88,12 +88,12 @@ function ResourceRow({ resource }: { resource: ResourceItem }) {
             target="_blank"
             rel="noreferrer noopener"
             onClick={() => resourceService.recordView(resource.id)}
-            className="inline-flex h-8 items-center rounded-lg border border-slate-300 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            className="inline-flex h-8 items-center rounded-lg border border-line px-3 text-xs font-medium text-ink hover:bg-canvas"
           >
             查看原始来源 ↗
           </a>
         ) : (
-          <span className="inline-flex h-8 items-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs text-slate-500">
+          <span className="inline-flex h-8 items-center rounded-lg border border-line bg-canvas px-3 text-xs text-ink-muted">
             站内资料（{resource.sourceName}）
           </span>
         )}

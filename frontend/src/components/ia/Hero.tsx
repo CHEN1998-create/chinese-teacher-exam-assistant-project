@@ -29,8 +29,8 @@ function RiskLine({ risk }: { risk: OpportunityRisk }) {
       className={cn(
         "flex items-start gap-2 rounded-lg px-3 py-2 text-sm",
         risk.tone === "must"
-          ? "bg-red-50 text-red-700"
-          : "bg-slate-100 text-slate-600",
+          ? "bg-danger-soft text-danger"
+          : "bg-canvas text-ink-muted",
       )}
     >
       <svg
@@ -54,16 +54,16 @@ function RiskLine({ risk }: { risk: OpportunityRisk }) {
 }
 
 const ACTION_CLASS =
-  "inline-flex h-12 w-full items-center justify-center rounded-xl bg-blue-600 px-6 text-base font-medium text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex h-12 w-full items-center justify-center rounded-xl bg-brand px-6 text-base font-medium text-white transition-colors hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
 
 export function Hero({ meta, conclusion, risk, action, children }: HeroProps) {
   return (
     <section
       aria-label="结论与下一步"
-      className="rounded-xl border border-slate-200 bg-white p-5"
+      className="rounded-xl border border-line bg-surface p-5"
     >
-      {meta && <p className="text-xs text-slate-500">{meta}</p>}
-      <h2 className="mt-1.5 text-xl font-semibold leading-snug text-slate-900">
+      {meta && <p className="text-xs text-ink-muted">{meta}</p>}
+      <h2 className="mt-1.5 text-xl font-semibold leading-snug text-ink">
         {conclusion}
       </h2>
       {risk && (

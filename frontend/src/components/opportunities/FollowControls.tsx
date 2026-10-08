@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ConfirmModal, Modal } from "@/components/ui/Modal";
 import { Textarea } from "@/components/ui/Input";
+import { StatusMessage } from "@/components/ui/StatusMessage";
 import {
   canTransition,
   FOLLOW_STATUS_LABELS,
@@ -17,11 +18,15 @@ import {
   type PrimarySwitchImpact,
 } from "@/lib/goals/domain";
 import { cn } from "@/lib/utils";
+import { USER_COPY } from "@/lib/ux/userCopy";
 
 /**
  * 关注状态与备考目标控制（详情页第一/第二层之间）。
  * 可流转按钮由状态机推导（前端只做展示门禁，后端会再次校验非法边）；
  * “已结束”为终态，不展示任何转出按钮。
+ *
+ * 关注从无到有：用非阻塞 StatusMessage 反馈“已加入关注，时间已加入日程”，
+ * 提供撤销；不弹模态、不打断后续操作（模块 0A §10 / §7.7）。
  */
 const NEXT_BUTTONS: Array<{
   status: FollowStatus;
@@ -62,6 +67,24 @@ export function FollowControls({
   const [confirmUnfollow, setConfirmUnfollow] = useState(false);
   const [primaryImpact, setPrimaryImpact] = useState<PrimarySwitchImpact | null>(null);
   const [impactLoading, setImpactLoading] = useState(false);
+  // 关注从无到有 → 非阻塞成功反馈 + 撤销（模块 0A §10/§7.7）
+  const [followJustAdded, setFollowJustAdded] = useState(false);
+  const prevFollowRef = useRef<FollowDTO | null>(follow);
+  const mountedRef = useRef(false);
+
+  useEffect(() => {
+    // 首次挂载不触发（避免用户从已关注状态进入页面时误报"已加入关注"）
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      prevFollowRef.current = follow;
+      return;
+    }
+    // 仅在 follow 从 null 变为非 null 时视为"刚刚关注成功"
+    if (!prevFollowRef.current && follow) {
+      setFollowJustAdded(true);
+    }
+    prevFollowRef.current = follow;
+  }, [follow]);
 
   /** 设为主要目标前：拉取当前主要目标并展示影响说明（模块 7） */
   const handleSetPrimaryClick = async () => {
@@ -83,8 +106,8 @@ export function FollowControls({
 
   if (!follow) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <p className="text-sm text-slate-500">
+      <div className="rounded-xl border border-line bg-surface p-4">
+        <p className="text-sm text-ink-muted">
           还没有关注这个机会。关注后可以在这里推进“考虑中 → 准备报名 →
           已报名”，并把它设为主要或备选备考目标。
         </p>
@@ -113,10 +136,25 @@ export function FollowControls({
   };
 
   return (
-    <section className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+    <section className="space-y-3 rounded-xl border border-line bg-surface p-4">
+      {followJustAdded && (
+        <StatusMessage
+          tone="success"
+          message={USER_COPY.FOLLOW.ADDED}
+          undo={{
+            label: USER_COPY.FOLLOW.UNDO,
+            onClick: () => {
+              setFollowJustAdded(false);
+              onUnfollow();
+            },
+          }}
+          onDismiss={() => setFollowJustAdded(false)}
+        />
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-semibold text-slate-800">我的跟进</span>
-        <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+        <span className="text-sm font-semibold text-ink">我的跟进</span>
+        <span className="inline-flex items-center rounded-full bg-canvas px-2.5 py-0.5 text-xs font-medium text-ink-muted">
           {FOLLOW_STATUS_LABELS[follow.status]}
         </span>
         {follow.role && (
@@ -124,8 +162,8 @@ export function FollowControls({
             className={cn(
               "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
               follow.role === "primary"
-                ? "bg-blue-50 text-blue-700"
-                : "bg-slate-100 text-slate-600",
+                ? "bg-brand-soft text-brand"
+                : "bg-canvas text-ink-muted",
             )}
           >
             {follow.role === "primary" ? "★ " : ""}
@@ -133,7 +171,7 @@ export function FollowControls({
           </span>
         )}
         {follow.abandonReason && (
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-ink-muted">
             放弃原因：{follow.abandonReason}
           </span>
         )}
@@ -170,7 +208,7 @@ export function FollowControls({
       )}
 
       {showAbandon && (
-        <div className="space-y-2 rounded-lg bg-slate-50 p-3">
+        <div className="space-y-2 rounded-lg bg-canvas p-3">
           <Textarea
             label="放弃原因（可选，仅自己可见）"
             value={abandonReason}
@@ -199,7 +237,7 @@ export function FollowControls({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+      <div className="flex flex-wrap items-center gap-2 border-t border-line pt-3">
         {follow.role === "primary" ? (
           <Button
             size="sm"
@@ -221,12 +259,12 @@ export function FollowControls({
         )}
         <button
           type="button"
-          className="text-xs text-slate-400 underline underline-offset-2 hover:text-red-600"
+          className="text-xs text-ink-muted underline underline-offset-2 hover:text-danger"
           onClick={() => setConfirmUnfollow(true)}
         >
           取消关注并删除记录
         </button>
-        <span className="text-[11px] text-slate-400">
+        <span className="text-[11px] text-ink-muted">
           设为主要目标后，原主要目标会自动转为备选。
         </span>
       </div>
@@ -270,7 +308,7 @@ export function FollowControls({
         <ul className="space-y-2 text-sm">
           {primaryImpact?.points.map((p, i) => (
             <li key={i} className="flex items-start gap-2">
-              <span aria-hidden="true" className="mt-0.5 text-slate-400">·</span>
+              <span aria-hidden="true" className="mt-0.5 text-ink-muted">·</span>
               <span>{p}</span>
             </li>
           ))}
