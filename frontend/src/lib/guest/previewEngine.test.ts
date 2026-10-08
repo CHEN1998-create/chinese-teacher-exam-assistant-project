@@ -1,0 +1,347 @@
+import { describe, it, expect } from "vitest";
+import { V61_NOW, V61_SEED_ANNOUNCEMENTS, V61_SCENARIO_IDS } from "@/lib/seed/v61-opportunities";
+import {
+  draftToProfile,
+  type GuestProfileDraft,
+} from "./guestSession";
+import {
+  buildGuestPreview,
+  GUEST_FOLLOW_LOGIN_HREF,
+  type GuestPreviewReady,
+} from "./previewEngine";
+
+/** 与 v6.1 seed 画像对齐的完整访客草稿（浙江本科师范生，未填户籍/年龄） */
+function completeDraft(overrides: Partial<GuestProfileDraft> = {}): GuestProfileDraft {
+  return {
+    regions: [
+      { code: "330000", province: "浙江省", level: "required" },
+      { code: "320000", province: "江苏省", level: "consider" },
+      { code: "340000", province: "安徽省", level: "consider" },
+    ],
+    educationLevel: "bachelor",
+    degree: "bachelor",
+    majorFullName: "汉语言文学（师范）",
+    graduationDate: "2026-06-15",
+    employmentStatus: "fresh_unemployed",
+    teacherCert: { status: "obtained", subject: "chinese", stage: "middle" },
+    intendedSubject: "chinese",
+    acceptedEmploymentNatures: [
+      "public_institution_staff",
+      "record_filing",
+      "post_quota",
+      "headcount_control",
+      "other",
+    ],
+    ...overrides,
+  };
+}
+
+function ready(draft = completeDraft()): GuestPreviewReady {
+  const result = buildGuestPreview(draft, V61_SEED_ANNOUNCEMENTS, V61_NOW);
+  if (result.kind !== "ready") {
+    throw new Error(`expected ready preview, got ${result.kind}`);
+  }
+  return result;
+}
+
+describe("buildGuestPreview：初步符合优先且有解释", () => {
+  it("标准画像：杭州排在优先位且初步符合，每条结论带逐项依据", () => {
+    const r = ready();
+    expect(r.view.priority?.unitId).toBe("unit-hangzhou-01");
+    expect(r.view.priority?.status).toBe("preliminary_eligible");
+    expect(r.view.preliminary.some((row) => row.unitId === "unit-hangzhou-01")).toBe(true);
+    expect(r.view.validCount).toBeGreaterThanOrEqual(1);
+
+    // 机会卡三层信息齐全：地区/性质/截止 + 逐项条件原因 + 官方来源
+    const hangzhou = r.view.priority!;
+    expect(hangzhou.dimensions.length).toBeGreaterThan(0);
+    expect(hangzhou.dimensions.every((d) => d.reason.length > 0)).toBe(true);
+    expect(hangzhou.officialUrl).toContain("example.gov.cn");
+  });
+
+  it("合肥补充公告 v2（延期扩招）也在初步符合中", () => {
+    const r = ready();
+    expect(r.view.preliminary.some((row) => row.announcementId === V61_SCENARIO_IDS.supplemented)).toBe(true);
+  });
+});
+
+describe("buildGuestPreview：未填写条件只能 UNKNOWN，绝不判不符合", () => {
+  it("缺少户籍：鄞州进入“补充户籍信息后判断”分组，不在明确不符合中", () => {
+    const r = ready();
+
+    const hukouGroup = r.view.needInfoGroups.find((g) => g.dimension === "hukou");
+    expect(hukouGroup).toBeDefined();
+    expect(hukouGroup!.count).toBe(1);
+    expect(hukouGroup!.rows[0].unitId).toBe("unit-yinzhou-01");
+    expect(hukouGroup!.rows[0].status).toBe("need_more_info");
+
+    // 明确不符合列表不能出现鄞州
+    expect(
+      r.view.notEligible.some((row) => row.unitId === "unit-yinzhou-01"),
+    ).toBe(false);
+
+    // 补问说明要解释“为什么要补、影响几个机会、不补不等于不符合”
+    const followUp = r.followUps.find((f) => f.dimension === "hukou");
+    expect(followUp).toBeDefined();
+    expect(followUp!.affectsCount).toBe(1);
+    expect(followUp!.reason).toContain("户籍");
+    expect(followUp!.reason).toContain("不会被直接判定为不符合");
+
+    // 卡片逐项依据里户籍维度必须是“信息不足”，不是“不满足”
+    const hukouDim = hukouGroup!.rows[0].dimensions.find((d) => d.label === "户籍");
+    expect(hukouDim?.value).toBe("UNKNOWN");
+  });
+
+  it("草稿映射出的画像不含出生/户籍/社保/工作经历字段", () => {
+    const profile = draftToProfile(completeDraft())!;
+    expect(profile).not.toHaveProperty("birthDate");
+    expect(profile).not.toHaveProperty("hukouRegionCode");
+    expect(profile).not.toHaveProperty("socialSecurityMonths");
+    expect(profile).not.toHaveProperty("workExperienceMonths");
+  });
+
+  it("苏州专业目录歧义：建议人工确认，而不是自动判符合或不符合", () => {
+    const r = ready();
+    const suzhou = r.view.manualReview.find((row) => row.unitId === "unit-suzhou-01");
+    expect(suzhou).toBeDefined();
+    expect(suzhou!.status).toBe("manual_review");
+  });
+
+  it("南京硕士门槛：明确不符合，出现在折叠分组", () => {
+    const r = ready();
+    const nanjing = r.view.notEligible.find((row) => row.unitId === "unit-nanjing-01");
+    expect(nanjing).toBeDefined();
+    expect(nanjing!.status).toBe("not_eligible");
+  });
+
+  it("温州已截止：不进入有效推荐，闸门原因可查", () => {
+    const r = ready();
+    const wenzhou = r.view.closed.find((row) => row.unitId === "unit-wenzhou-01");
+    expect(wenzhou).toBeDefined();
+    expect(wenzhou!.gateReason).toContain("截止");
+    // 有效机会 = 杭州、合肥（初步符合）+ 鄞州（补信息）+ 苏州（人工确认），已截止/来源失效不计入
+    expect(r.view.validCount).toBe(4);
+  });
+
+  it("嘉兴来源失效：不进入有效推荐，闸门原因可查且与已截止分桶", () => {
+    const r = ready();
+    const jiaxing = r.view.closed.find((row) => row.unitId === "unit-jiaxing-01");
+    expect(jiaxing).toBeDefined();
+    expect(jiaxing!.gateCode).toBe("source_unavailable");
+    expect(jiaxing!.gateReason).toContain("404");
+    const sourceBucket = r.view.closedBuckets.find((b) => b.key === "source");
+    expect(sourceBucket?.rows.some((row) => row.unitId === "unit-jiaxing-01")).toBe(true);
+    const expiredBucket = r.view.closedBuckets.find((b) => b.key === "expired");
+    expect(expiredBucket?.rows.some((row) => row.unitId === "unit-wenzhou-01")).toBe(true);
+  });
+});
+
+describe("buildGuestPreview：返回修改后重新计算（纯函数确定性）", () => {
+  it("把专业改成公告外专业：杭州从初步符合变为明确不符合", () => {
+    const before = ready();
+    expect(
+      before.view.preliminary.some((row) => row.unitId === "unit-hangzhou-01"),
+    ).toBe(true);
+
+    const after = ready(completeDraft({ majorFullName: "计算机科学与技术" }));
+    expect(
+      after.view.notEligible.some((row) => row.unitId === "unit-hangzhou-01"),
+    ).toBe(true);
+    expect(
+      after.view.preliminary.some((row) => row.unitId === "unit-hangzhou-01"),
+    ).toBe(false);
+  });
+
+  it("去掉浙江地区：杭州/鄞州因地区硬边界进入「地区不重叠」，不判资格不符合；江苏/安徽机会不受影响", () => {
+    const draft = completeDraft({
+      regions: [{ code: "320000", province: "江苏省", level: "required" }],
+    });
+    const r = ready(draft);
+    expect(
+      r.view.preliminary.some((row) => row.unitId === "unit-hangzhou-01"),
+    ).toBe(false);
+    // 宁波鄞州也随浙江地区一起被过滤（地区 FAIL，闸门外失效）：
+    // 模块 5 起与「明确不符合」分离，进入「不在你填写的地区范围」
+    expect(
+      r.view.regionOutOfScope.some((row) => row.announcementId === V61_SCENARIO_IDS.needHukou),
+    ).toBe(true);
+    expect(
+      r.view.notEligible.some((row) => row.announcementId === V61_SCENARIO_IDS.needHukou),
+    ).toBe(false);
+    // 广东之外：画像地区之外的浙江省份不算「收录覆盖」， uncovered 不涉及（江苏有岗位）
+    expect(r.view.uncoveredRegions).toEqual([]);
+  });
+
+  it("同一草稿多次计算结果一致（返回修改前后可稳定复算）", () => {
+    const a = ready();
+    const b = ready();
+    expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+  });
+});
+
+describe("buildGuestPreview：非语文学科不产生伪造结果", () => {
+  it("资格证学科为数学：直接 subject_not_open，不跑匹配", () => {
+    const draft = completeDraft({
+      teacherCert: { status: "obtained", subject: "math", stage: "middle" },
+      intendedSubject: "math",
+    });
+    const result = buildGuestPreview(draft, V61_SEED_ANNOUNCEMENTS, V61_NOW);
+    expect(result.kind).toBe("subject_not_open");
+    if (result.kind === "subject_not_open") {
+      expect(result.subjectLabel).toBe("数学");
+    }
+  });
+
+  it("没有教师资格证但意向报英语：同样只给未开放分流", () => {
+    const draft = completeDraft({
+      teacherCert: { status: "none" },
+      intendedSubject: "english",
+    });
+    const result = buildGuestPreview(draft, V61_SEED_ANNOUNCEMENTS, V61_NOW);
+    expect(result.kind).toBe("subject_not_open");
+  });
+});
+
+describe("buildGuestPreview：Preview 只有一个主要行动，且不生成 7 天计划", () => {
+  it("整页只有一个主行动，指向关注登录；机会行不携带同等级行动", () => {
+    const r = ready();
+    expect(r.primaryAction).not.toBeNull();
+    expect(r.primaryAction!.href).toBe(GUEST_FOLLOW_LOGIN_HREF);
+    expect([r.primaryAction].filter(Boolean)).toHaveLength(1);
+
+    // 所有机会行只是数据行，不暴露任何主行动字段（展开为卡片自身的轻量交互）
+    for (const row of [
+      ...r.view.preliminary,
+      ...r.view.manualReview,
+      ...r.view.notEligible,
+    ]) {
+      expect(row).not.toHaveProperty("primaryAction");
+    }
+  });
+
+  it("首次结果模型不含任何备考计划/今日任务字段", () => {
+    const r = ready() as unknown as Record<string, unknown>;
+    expect(r).not.toHaveProperty("weekThemes");
+    expect(r).not.toHaveProperty("todayTask");
+    expect(r).not.toHaveProperty("plan");
+  });
+
+  it("没有任何有效机会时不产生主行动（页面转空态）", () => {
+    // 全博士 + 浙江：本科学历机会全部不符，仅可能没有有效机会
+    const draft = completeDraft({
+      regions: [{ code: "330000", province: "浙江省", level: "required" }],
+      // 反向构造：中专学历且专业不符，使所有在招机会失效
+      educationLevel: "secondary",
+      degree: "none",
+      majorFullName: "烹饪工艺",
+      teacherCert: { status: "none" },
+    });
+    const r = ready(draft);
+    expect(r.view.priority).toBeNull();
+    expect(r.primaryAction).toBeNull();
+  });
+});
+
+describe("buildGuestPreview：未完成画像", () => {
+  it("五组未答完时返回 incomplete，不产出机会", () => {
+    const draft = completeDraft({ majorFullName: undefined });
+    const result = buildGuestPreview(draft, V61_SEED_ANNOUNCEMENTS, V61_NOW);
+    expect(result.kind).toBe("incomplete");
+  });
+});
+
+describe("buildGuestPreview：暂不确定/暂不提供（模块 4）", () => {
+  it("跳过专业：相关岗位只进「补充专业信息后判断」，绝不进明确不符合", () => {
+    const draft = completeDraft({
+      majorFullName: undefined,
+      skippedSteps: [3],
+    });
+    const r = ready(draft);
+
+    // 结果限制明示缺了哪组信息
+    expect(r.limitations.map((l) => l.step)).toContain(3);
+
+    const majorGroup = r.view.needInfoGroups.find((g) => g.dimension === "major");
+    expect(majorGroup).toBeDefined();
+    const hangzhouInMajor = majorGroup!.rows.some((row) => row.unitId === "unit-hangzhou-01");
+    expect(hangzhouInMajor).toBe(true);
+
+    // 杭州的专业维度是 UNKNOWN；不出现在初步符合，也不出现在明确不符合
+    const hangzhou = majorGroup!.rows.find((row) => row.unitId === "unit-hangzhou-01")!;
+    expect(hangzhou.dimensions.find((d) => d.label === "专业")?.value).toBe("UNKNOWN");
+    expect(r.view.notEligible.some((row) => row.unitId === "unit-hangzhou-01")).toBe(false);
+    expect(r.view.preliminary.some((row) => row.unitId === "unit-hangzhou-01")).toBe(false);
+
+    // 补问原因是「暂未提供」口径
+    const followUp = r.followUps.find((f) => f.dimension === "major");
+    expect(followUp?.reason).toContain("暂未提供");
+  });
+
+  it("跳过地区：无初步符合、主行动为空，所有岗位并入「补充地区后判断」，南京学历硬不符仍保留在明确不符合", () => {
+    const draft = completeDraft({
+      regions: [],
+      skippedSteps: [1],
+    });
+    const r = ready(draft);
+
+    expect(r.limitations.map((l) => l.step)).toContain(1);
+    expect(r.view.priority).toBeNull();
+    expect(r.primaryAction).toBeNull();
+    expect(r.view.validCount).toBe(0);
+
+    const regionGroup = r.view.needInfoGroups.find((g) => g.dimension === "region");
+    expect(regionGroup).toBeDefined();
+    // 杭州/鄞州/合肥仅有 region UNKNOWN，进入地区补充分组（苏州因专业歧义整体归人工确认，不在此列）
+    expect(regionGroup!.count).toBeGreaterThanOrEqual(3);
+    expect(
+      regionGroup!.rows.some((row) => row.unitId === "unit-hangzhou-01"),
+    ).toBe(true);
+    // 已截止的温州不混入地区补充分组
+    expect(
+      regionGroup!.rows.some((row) => row.unitId === "unit-wenzhou-01"),
+    ).toBe(false);
+
+    // 南京是硕士学历硬不符（overall=not_eligible），不能因缺地区被洗成「补充信息」
+    expect(
+      r.view.notEligible.some((row) => row.unitId === "unit-nanjing-01"),
+    ).toBe(true);
+    // 杭州等仅缺地区的岗位绝不进明确不符合
+    expect(
+      r.view.notEligible.some((row) => row.unitId === "unit-hangzhou-01"),
+    ).toBe(false);
+  });
+
+  it("跳过第 5 组教师资格：岗位教师维度 UNKNOWN，画像不崩、不判不符合", () => {
+    const draft = completeDraft({
+      teacherCert: undefined,
+      intendedSubject: undefined,
+      skippedSteps: [5],
+    });
+    const r = ready(draft);
+    const certGroup = r.view.needInfoGroups.find((g) => g.dimension === "teacher_cert");
+    expect(certGroup).toBeDefined();
+    const hangzhou = certGroup!.rows.find((row) => row.unitId === "unit-hangzhou-01");
+    expect(hangzhou).toBeDefined();
+    expect(
+      hangzhou!.dimensions.find((d) => d.label === "教师资格")?.value,
+    ).toBe("UNKNOWN");
+  });
+
+  it("五组全部跳过：仍可生成结果页模型（空态），限制数为 5，不抛错", () => {
+    const draft = completeDraft({
+      regions: [],
+      educationLevel: undefined,
+      degree: undefined,
+      majorFullName: undefined,
+      graduationDate: undefined,
+      employmentStatus: undefined,
+      teacherCert: undefined,
+      intendedSubject: undefined,
+      skippedSteps: [1, 2, 3, 4, 5],
+    });
+    const r = ready(draft);
+    expect(r.limitations).toHaveLength(5);
+    expect(r.view.priority).toBeNull();
+    expect(r.primaryAction).toBeNull();
+  });
+});

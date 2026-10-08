@@ -1,8 +1,12 @@
-# 本仓库只管理项目级文档与 QA 验收脚本；frontend/ 与 backend/ 各自独立成库
+# 只纳入产品源码、部署配置、文档与 QA 脚本；根目录本地归档和历史仓库备份不入库
 /*
 !/.gitignore
+!/README.md
 !/docs
 !/.qa-harness
+!/frontend
+!/backend
+!/.github
 
 # deploy/ 只入库编排/反代配置、env 样例与部署手册；密钥与真实 env 永不入库
 !/deploy
@@ -13,6 +17,7 @@
 !/deploy/Caddyfile
 !/deploy/backend.env.example
 !/deploy/frontend.env.example
+!/deploy/.env.example
 !/deploy/README.md
 
 # QA 运行产物与依赖不入库

@@ -1,0 +1,242 @@
+/**
+ * 集成测试（jsdom + localStorage）：
+ * - 访客五组画像刷新后不丢失，分步保存前序答案不被覆盖；
+ * - 过期会话自动失效；
+ * - 同一任务重复提交反馈被拦截，只能修改已有反馈（与访客流程无关的既有回归）。
+ */
+import { describe, it, expect, beforeEach } from "vitest";
+import { DailyPlan, PlanTask, WeeklyPlan } from "@/types";
+import { STORAGE_KEYS } from "@/lib/mock-data";
+import { saveToStorageStrict } from "@/lib/storage";
+import { authService } from "@/lib/auth";
+import { feedbackService } from "@/lib/services";
+import { DuplicateFeedbackError } from "@/lib/plans/feedbackService";
+import {
+  TOTAL_PROFILE_STEPS,
+  guestSessionService,
+  type GuestProfileDraft,
+  type GuestProfileSession,
+} from "./guestSession";
+
+const FULL_DRAFT: GuestProfileDraft = {
+  regions: [
+    { code: "330000", province: "浙江省", level: "required" },
+    { code: "320000", province: "江苏省", level: "consider" },
+  ],
+  educationLevel: "bachelor",
+  degree: "bachelor",
+  majorFullName: "汉语言文学（师范）",
+  graduationDate: "2026-06-15",
+  employmentStatus: "fresh_unemployed",
+  teacherCert: { status: "obtained", subject: "chinese", stage: "middle" },
+  intendedSubject: "chinese",
+  acceptedEmploymentNatures: ["public_institution_staff", "record_filing"],
+};
+
+beforeEach(async () => {
+  localStorage.clear();
+  await authService.logout().catch(() => undefined);
+});
+
+describe("访客画像：刷新恢复", () => {
+  it("五组答完保存后重新加载（模拟刷新）：字段与进度完整保留", () => {
+    guestSessionService.save({ draft: FULL_DRAFT, step: TOTAL_PROFILE_STEPS });
+
+    // 重新从 localStorage 读取，模拟页面刷新后的无状态加载
+    const restored = guestSessionService.load();
+    expect(restored).not.toBeNull();
+    expect(restored!.step).toBe(TOTAL_PROFILE_STEPS);
+    expect(restored!.draft.regions).toHaveLength(2);
+    expect(restored!.draft.regions[0]).toMatchObject({
+      code: "330000",
+      province: "浙江省",
+      level: "required",
+    });
+    expect(restored!.draft.educationLevel).toBe("bachelor");
+    expect(restored!.draft.degree).toBe("bachelor");
+    expect(restored!.draft.majorFullName).toBe("汉语言文学（师范）");
+    expect(restored!.draft.graduationDate).toBe("2026-06-15");
+    expect(restored!.draft.employmentStatus).toBe("fresh_unemployed");
+    expect(restored!.draft.teacherCert).toMatchObject({
+      status: "obtained",
+      subject: "chinese",
+      stage: "middle",
+    });
+    expect(restored!.draft.acceptedEmploymentNatures).toEqual([
+      "public_institution_staff",
+      "record_filing",
+    ]);
+    expect(guestSessionService.isComplete()).toBe(true);
+    expect(guestSessionService.isInProgress()).toBe(false);
+  });
+
+  it("分步保存时前序答案不被覆盖（返回修改后继续）", () => {
+    guestSessionService.save({ draft: { regions: FULL_DRAFT.regions }, step: 1 });
+    guestSessionService.save({
+      draft: { educationLevel: "master", degree: "master" },
+      step: 2,
+    });
+
+    const session = guestSessionService.load()!;
+    expect(session.step).toBe(2);
+    expect(session.draft.regions).toHaveLength(2);
+    expect(session.draft.educationLevel).toBe("master");
+    expect(session.draft.degree).toBe("master");
+    expect(guestSessionService.isInProgress()).toBe(true);
+  });
+
+  it("返回上一组时只保存草稿不回退已完成进度", () => {
+    guestSessionService.save({ draft: FULL_DRAFT, step: 5 });
+    // 返回修改（不带 step）：草稿更新，进度保持
+    guestSessionService.save({ draft: { majorFullName: "汉语言文学" } });
+    const session = guestSessionService.load()!;
+    expect(session.step).toBe(5);
+    expect(session.draft.majorFullName).toBe("汉语言文学");
+    expect(session.draft.regions).toHaveLength(2);
+  });
+
+  it("过期会话：load 返回 null 并清除，需要重新开始", () => {
+    const expired: GuestProfileSession = {
+      draft: FULL_DRAFT,
+      step: TOTAL_PROFILE_STEPS,
+      createdAt: "2000-01-01T00:00:00.000Z",
+      updatedAt: "2000-01-01T00:00:00.000Z",
+      expiresAt: "2000-01-02T00:00:00.000Z",
+    };
+    saveToStorageStrict(STORAGE_KEYS.GUEST_PROFILE_V61, expired);
+
+    expect(guestSessionService.load()).toBeNull();
+    expect(guestSessionService.isComplete()).toBe(false);
+    expect(guestSessionService.isInProgress()).toBe(false);
+    expect(localStorage.getItem(STORAGE_KEYS.GUEST_PROFILE_V61)).toBeNull();
+  });
+
+  it("clear 后会话消失", () => {
+    guestSessionService.save({ draft: FULL_DRAFT, step: 5 });
+    expect(guestSessionService.load()).not.toBeNull();
+    guestSessionService.clear();
+    expect(guestSessionService.load()).toBeNull();
+  });
+
+  it("「暂不提供」的步骤号随草稿一起保存与恢复（模块 4）", () => {
+    const draft: GuestProfileDraft = {
+      ...FULL_DRAFT,
+      majorFullName: undefined,
+      skippedSteps: [3],
+    };
+    guestSessionService.save({ draft, step: 5 });
+    const restored = guestSessionService.load()!;
+    expect(restored.draft.skippedSteps).toEqual([3]);
+    expect(restored.draft.majorFullName).toBeUndefined();
+    expect(guestSessionService.isComplete()).toBe(true); // 跳过的步骤视为完成
+  });
+
+  it("补填内容后的保存会自动清掉对应跳过标记", () => {
+    guestSessionService.save({
+      draft: { ...FULL_DRAFT, majorFullName: undefined, skippedSteps: [3] },
+      step: 5,
+    });
+    guestSessionService.save({ draft: { majorFullName: "汉语言文学" } });
+    expect(guestSessionService.load()!.draft.skippedSteps ?? []).toEqual([]);
+  });
+
+  it("本机存储写入失败时 save 抛错（页面据此保留输入并提示重试）", () => {
+    const original = Storage.prototype.setItem;
+    Storage.prototype.setItem = () => {
+      throw new Error("QuotaExceededError");
+    };
+    try {
+      expect(() => guestSessionService.save({ draft: FULL_DRAFT, step: 1 })).toThrow();
+    } finally {
+      Storage.prototype.setItem = original;
+    }
+  });
+});
+
+describe("重复提交反馈（既有回归，与访客画像解耦）", () => {
+  function seedWeeklyPlan(): { task: PlanTask } {
+    const ts = "2026-03-01T20:00:00.000Z";
+    const task: PlanTask = {
+      id: "t-seed-1",
+      dailyPlanId: "d-seed-1",
+      title: "课程标准学习",
+      module: "mod_kebiao",
+      sourceType: "resource",
+      resourceId: "r-1",
+      estimatedTime: 40,
+      completionCriteria: "复述课程理念",
+      arrangementReason: "先打底",
+      reviewAction: "合上书本默写要点",
+      order: 1,
+      status: "pending",
+      priority: "medium",
+      isCore: true,
+      createdAt: ts,
+      updatedAt: ts,
+    };
+    const daily: DailyPlan = {
+      id: "d-seed-1",
+      weeklyPlanId: "wp-seed",
+      date: "2026-03-02",
+      dayOfWeek: 1,
+      tasks: [task],
+      totalEstimatedTime: 40,
+      isMinimumViable: true,
+      availableMinutes: 45,
+      createdAt: ts,
+      updatedAt: ts,
+    };
+    const weekly: WeeklyPlan = {
+      id: "wp-seed",
+      userId: "u-001",
+      examTargetId: "et-001",
+      weekNumber: 1,
+      startDate: "2026-03-02",
+      endDate: "2026-03-08",
+      focus: "课标",
+      status: "active",
+      version: 1,
+      generationReason: "种子计划",
+      createdAt: ts,
+      updatedAt: ts,
+    };
+    saveToStorageStrict(STORAGE_KEYS.PLANS, [weekly]);
+    saveToStorageStrict(STORAGE_KEYS.DAILY_PLANS, [daily]);
+    return { task };
+  }
+
+  it("同一任务第二次提交抛 DuplicateFeedbackError，已有反馈可修改", async () => {
+    await authService.login({
+      account: "student@demo.app",
+      password: "demo1234",
+    });
+    const { task } = seedWeeklyPlan();
+
+    feedbackService.submit(task.id, {
+      status: "not_completed",
+      incompleteReason: "time",
+      errorTypes: [],
+      hasSecondPractice: false,
+    });
+
+    expect(() =>
+      feedbackService.submit(task.id, {
+        status: "completed",
+        errorTypes: [],
+        hasSecondPractice: false,
+      }),
+    ).toThrow(DuplicateFeedbackError);
+
+    // 只能修改已有反馈：状态变更成功，创建时间保留
+    const existing = feedbackService.getByTask(task.id)!;
+    const updated = feedbackService.update(existing.id, {
+      status: "partial",
+      actualTime: 20,
+      incompleteReason: "time",
+      errorTypes: [],
+      hasSecondPractice: false,
+    });
+    expect(updated.status).toBe("partial");
+    expect(updated.createdAt).toBe(existing.createdAt);
+  });
+});

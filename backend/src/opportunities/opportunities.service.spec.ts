@@ -1,0 +1,747 @@
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
+import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  MAJOR_ALIAS_VERSION,
+  MATCH_RULE_VERSION,
+} from '../matching/engine.js';
+import { CATALOG_VERSION } from '../matching/catalog.js';
+import {
+  REAL_ANNOUNCEMENT_IDS,
+  REAL_CATALOG_VERSION,
+} from '../matching/real-catalog.js';
+import type { UserRecruitmentProfile } from '../matching/types.js';
+import { OpportunitiesService } from './opportunities.service.js';
+import { buildGoals, type CatalogSnapshot } from './view.js';
+import type { FollowRecord } from './follow.domain.js';
+
+const PROFILE: UserRecruitmentProfile = {
+  regions: [
+    { code: '330000', province: '浙江省', level: 'required' },
+    { code: '320000', province: '江苏省', level: 'consider' },
+    { code: '340000', province: '安徽省', level: 'consider' },
+  ],
+  educationLevel: 'bachelor',
+  degree: 'bachelor',
+  majorFullName: '汉语言文学（师范）',
+  graduationDate: '2026-06-30',
+  employmentStatus: 'fresh_unemployed',
+  socialSecurityMonths: 0,
+  teacherCert: { status: 'obtained', subject: 'chinese', stage: 'middle' },
+  acceptedEmploymentNatures: [
+    'public_institution_staff',
+    'record_filing',
+    'post_quota',
+    'headcount_control',
+    'other',
+  ],
+};
+
+interface FollowRow {
+  id: string;
+  userId: string;
+  unitId: string;
+  announcementId: string;
+  versionId: string;
+  status: string;
+  role: string | null;
+  followedAt: Date;
+  statusHistory: unknown;
+  abandonReason: string | null;
+  materialStatuses?: unknown;
+  consultationNotes?: unknown;
+  version?: number;
+}
+
+/** 内存版 Prisma：只实现 service 实际用到的模型方法 */
+function createFakePrisma() {
+  const rows = new Map<string, FollowRow>();
+  const corrections: Array<Record<string, unknown>> = [];
+  let seq = 0;
+  const keyOf = (userId: string, unitId: string) => `${userId}::${unitId}`;
+
+  const followedOpportunity = {
+    findUnique: async ({
+      where,
+    }: {
+      where: { userId_unitId: { userId: string; unitId: string } };
+    }) => rows.get(keyOf(where.userId_unitId.userId, where.userId_unitId.unitId)) ?? null,
+    findUniqueOrThrow: async ({
+      where,
+    }: {
+      where: { userId_unitId: { userId: string; unitId: string } };
+    }) => {
+      const row = rows.get(
+        keyOf(where.userId_unitId.userId, where.userId_unitId.unitId),
+      );
+      if (!row) throw new Error('not found');
+      return row;
+    },
+    findMany: async ({ where }: { where: { userId: string } }) =>
+      [...rows.values()]
+        .filter((r) => r.userId === where.userId)
+        .sort((a, b) => a.followedAt.getTime() - b.followedAt.getTime()),
+    create: async ({ data }: { data: Omit<FollowRow, 'id'> }) => {
+      const row: FollowRow = { ...data, id: `gen-${++seq}` };
+      rows.set(keyOf(row.userId, row.unitId), row);
+      return row;
+    },
+    update: async ({
+      where,
+      data,
+    }: {
+      where: { userId_unitId: { userId: string; unitId: string } };
+      data: Partial<FollowRow>;
+    }) => {
+      const row = rows.get(
+        keyOf(where.userId_unitId.userId, where.userId_unitId.unitId),
+      );
+      if (!row) throw new Error('not found');
+      Object.assign(row, data);
+      return row;
+    },
+    updateMany: async ({
+      where,
+      data,
+    }: {
+      where: {
+        userId: string;
+        role: string;
+        NOT: { unitId: string };
+      };
+      data: Partial<FollowRow>;
+    }) => {
+      let count = 0;
+      for (const row of rows.values()) {
+        if (
+          row.userId === where.userId &&
+          row.role === where.role &&
+          row.unitId !== where.NOT.unitId
+        ) {
+          Object.assign(row, data);
+          count += 1;
+        }
+      }
+      return { count };
+    },
+    deleteMany: async ({
+      where,
+    }: {
+      where: { userId: string; unitId: string };
+    }) => {
+      let count = 0;
+      if (rows.delete(keyOf(where.userId, where.unitId))) count = 1;
+      return { count };
+    },
+  };
+
+  const opportunityCorrection = {
+    create: async ({ data }: { data: Record<string, unknown> }) => {
+      const row = {
+        id: `cor-${++seq}`,
+        status: 'submitted',
+        reviewNote: null,
+        reviewerId: null,
+        reviewedAt: null,
+        createdAt: new Date(),
+        ...data,
+      };
+      corrections.push(row);
+      return row;
+    },
+    findUnique: async ({ where }: { where: { id: string } }) =>
+      corrections.find((r) => r.id === where.id) ?? null,
+    findMany: async ({
+      where,
+      take,
+    }: {
+      where?: { userId?: string; status?: string };
+      take?: number;
+    }) => {
+      let list = [...corrections];
+      if (where?.userId) list = list.filter((r) => r.userId === where.userId);
+      if (where?.status) list = list.filter((r) => r.status === where.status);
+      list.sort(
+        (a: { createdAt: Date }, b: { createdAt: Date }) =>
+          b.createdAt.getTime() - a.createdAt.getTime(),
+      );
+      return typeof take === 'number' ? list.slice(0, take) : list;
+    },
+    update: async ({
+      where,
+      data,
+    }: {
+      where: { id: string };
+      data: Record<string, unknown>;
+    }) => {
+      const row = corrections.find((r) => r.id === where.id);
+      if (!row) throw new Error('not found');
+      Object.assign(row, data);
+      return row;
+    },
+  };
+
+  const users = new Map<string, { id: string; email: string; name: string | null }>([
+    ['user-1', { id: 'user-1', email: 'u1@example.com', name: '学生一' }],
+  ]);
+  const notifications: Array<Record<string, unknown>> = [];
+
+  const user = {
+    findMany: async ({ where }: { where: { id: { in: string[] } } }) =>
+      where.id.in.map((id) => users.get(id)).filter(Boolean),
+  };
+
+  const notificationRecord = {
+    create: async ({ data }: { data: Record<string, unknown> }) => {
+      const row = { id: `notif-${++seq}`, readAt: null, createdAt: new Date(), ...data };
+      notifications.push(row);
+      return row;
+    },
+  };
+
+  return {
+    prisma: {
+      followedOpportunity,
+      opportunityCorrection,
+      notificationRecord,
+      user,
+      $transaction: async (ops: Array<Promise<unknown>>) => Promise.all(ops),
+    } as never,
+    rows,
+    corrections,
+    notifications,
+  };
+}
+
+const fakeProfileService = {
+  getProfile: async () => null,
+  saveProfile: async () => undefined,
+} as never;
+
+describe('OpportunitiesService：匹配响应', () => {
+  it('七场景演示数据全部出现且每条结论携带规则版本、公告版本与证据锚点', async () => {
+    const fake = createFakePrisma();
+    const service = new OpportunitiesService(fake.prisma, fakeProfileService);
+    const response = await service.match(PROFILE, 'user-1');
+
+    expect(response.meta.ruleVersion).toBe(MATCH_RULE_VERSION);
+    expect(response.meta.majorAliasVersion).toBe(MAJOR_ALIAS_VERSION);
+    expect(response.meta.catalogVersion).toBe(CATALOG_VERSION);
+    expect(response.meta.realCatalogVersion).toBe(REAL_CATALOG_VERSION);
+    expect(response.meta.evaluatedAt).toBeTruthy();
+    // 真实监测覆盖随响应返回：0 在报、最近核对时间可展示
+    expect(response.coverage.openOpportunityCount).toBe(0);
+    expect(response.coverage.lastCheckedAt).toMatch(/^2026-10-06/);
+
+    const all = [
+      ...response.groups.preliminary,
+      ...response.groups.needInfo.flatMap((g) => g.units),
+      ...response.groups.manualReview,
+      ...response.groups.notEligible,
+      ...response.groups.closed,
+    ];
+    // 7 个演示报考单元 + 4 个真实监测单元（鄞州1、杭州2、宁波1）
+    expect(all).toHaveLength(11);
+
+    const demo = all.filter((u) => u.announcement.dataset === 'demo');
+    const real = all.filter((u) => u.announcement.dataset === 'real');
+    expect(demo).toHaveLength(7);
+    expect(real).toHaveLength(4);
+
+    // 7 条演示公告当前版本各一个报考单元（合肥 v1 被 v2 取代，不出现 v1）
+    const demoIds = demo.map((u) => u.unit.id);
+    expect(demoIds).toContain('unit-hefei-01-v2');
+    expect(demoIds).not.toContain('unit-hefei-01-v1');
+
+    // 来源失效演示单元：报名窗口名义开放但 source_unavailable 闸门失败，
+    // 只能落在 closed，不进任何推荐组
+    const jiaxing = all.find((u) => u.unit.id === 'unit-jiaxing-01');
+    expect(jiaxing).toBeDefined();
+    const jxGate = jiaxing!.gates.find((g) => g.code === 'source_unavailable');
+    expect(jxGate?.passed).toBe(false);
+    expect(jxGate?.reason).toContain('404');
+    expect(response.groups.closed.map((u) => u.unit.id)).toContain(
+      'unit-jiaxing-01',
+    );
+
+    for (const dto of demo) {
+      expect(dto.version.id).toMatch(/^ann-.+-v\d+$/);
+      expect(dto.version.officialSource.state).toBe('official');
+      expect(dto.gates.length).toBeGreaterThan(0);
+      for (const dimension of dto.dimensions) {
+        // 地区是用户偏好约束；其余条件必须能追溯公告原文与证据
+        if (dimension.dimension === 'region') {
+          expect(dimension.requirementDescription).toBeTruthy();
+          expect(dimension.evidence).toBeUndefined();
+        } else {
+          expect(dimension.requirementDescription).toBeTruthy();
+          expect(dimension.evidence?.state).toBe('official');
+          expect(dimension.evidence?.locator).toBeTruthy();
+        }
+      }
+    }
+
+    // 真实记录：全部 AI 初核待复核、落在 closed（截止/预告），证据为 ai_extracted
+    const realIds = real.map((u) => u.unit.id);
+    expect(realIds).toEqual(
+      expect.arrayContaining([
+        'real-yz-2026-chinese-01',
+        'real-hz-202604-fuchun-chinese',
+        'real-hz-202604-gaoxin-chinese',
+        'real-nb-202607-nwsis-chinese',
+      ]),
+    );
+    for (const dto of real) {
+      expect(dto.announcement.reviewStatus).toBe('ai_reviewed_pending');
+      expect(dto.version.officialSource.state).toBe('ai_extracted');
+      expect(dto.gates.some((g) => !g.passed)).toBe(true);
+      expect(dto.unit.sourceRow?.locator).toBeTruthy();
+    }
+    expect(real.every((u) => response.groups.closed.includes(u))).toBe(true);
+  });
+
+  it('真实公告 id 常量与台账一致（防止台账 id 漂移）', () => {
+    expect(REAL_ANNOUNCEMENT_IDS.yinzhouPreview).toBe(
+      'real-yinzhou-2026-autumn',
+    );
+  });
+
+  it('画像结构非法时抛 400，不产出任何结果', async () => {
+    const service = new OpportunitiesService(createFakePrisma().prisma, fakeProfileService);
+    await expect(
+      service.match({ ...PROFILE, regions: 'bad' }, 'user-1'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('详情返回三层所需的逐条件/版本链数据；未知单元 404', async () => {
+    const service = new OpportunitiesService(createFakePrisma().prisma, fakeProfileService);
+    const detail = await service.unitDetail(
+      PROFILE,
+      'user-1',
+      'unit-hangzhou-01',
+    );
+    expect(detail.unit.announcement.title).toContain('杭州');
+    expect(detail.unit.version.versionNumber).toBe(1);
+    expect(detail.previousVersions).toEqual([]);
+
+    const hefei = await service.unitDetail(
+      PROFILE,
+      'user-1',
+      'unit-hefei-01-v2',
+    );
+    expect(hefei.previousVersions).toHaveLength(1);
+    expect(hefei.previousVersions[0]?.supersededAt).toBeTruthy();
+    // 延期与扩招说明挂在当前版本 v2 的 changeNote 上
+    expect(hefei.unit.version.changeNote).toContain('延至');
+    expect(hefei.unit.version.changeNote).toContain('8人');
+
+    await expect(
+      service.unitDetail(PROFILE, 'user-1', 'not-exist'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('OpportunitiesService：关注与状态流转', () => {
+  let fake: ReturnType<typeof createFakePrisma>;
+  let service: OpportunitiesService;
+
+  beforeEach(() => {
+    fake = createFakePrisma();
+    service = new OpportunitiesService(fake.prisma, fakeProfileService);
+  });
+
+  it('关注初始为 considering；重复关注幂等不重置状态', async () => {
+    const first = await service.follow('user-1', 'unit-hangzhou-01');
+    expect(first.status).toBe('considering');
+    expect(first.role).toBeNull();
+    expect(first.statusHistory).toHaveLength(1);
+
+    await service.transition('user-1', 'unit-hangzhou-01', 'preparing');
+    const second = await service.follow('user-1', 'unit-hangzhou-01');
+    expect(second.status).toBe('preparing');
+    expect(fake.rows.size).toBe(1);
+  });
+
+  it('关注后匹配结果的对应卡片携带 follow；其他卡片不受影响', async () => {
+    await service.follow('user-1', 'unit-hangzhou-01');
+    const response = await service.match(PROFILE, 'user-1');
+    const all = [
+      ...response.groups.preliminary,
+      ...response.groups.needInfo.flatMap((g) => g.units),
+      ...response.groups.manualReview,
+      ...response.groups.notEligible,
+      ...response.groups.closed,
+    ];
+    const followed = all.filter((u) => u.follow !== null);
+    expect(followed).toHaveLength(1);
+    expect(followed[0]?.unit.id).toBe('unit-hangzhou-01');
+  });
+
+  it('非法流转（considering → registered）被拒绝；未关注先流转报 404', async () => {
+    await service.follow('user-1', 'unit-hangzhou-01');
+    await expect(
+      service.transition('user-1', 'unit-hangzhou-01', 'registered'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.transition('user-1', 'unit-yinzhou-01', 'preparing'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('关注状态切换不影响其他机会，也不影响其他用户', async () => {
+    await service.follow('user-1', 'unit-hangzhou-01');
+    await service.follow('user-1', 'unit-yinzhou-01');
+    await service.follow('user-2', 'unit-hangzhou-01');
+
+    await service.transition('user-1', 'unit-hangzhou-01', 'abandoned', undefined, '时间冲突');
+    const followsUser1 = await service.listFollows('user-1');
+    const hz = followsUser1.find((f) => f.unitId === 'unit-hangzhou-01');
+    const yz = followsUser1.find((f) => f.unitId === 'unit-yinzhou-01');
+    expect(hz?.status).toBe('abandoned');
+    expect(hz?.abandonReason).toBe('时间冲突');
+    expect(yz?.status).toBe('considering');
+
+    const followsUser2 = await service.listFollows('user-2');
+    expect(followsUser2[0]?.status).toBe('considering');
+  });
+
+  it('取消关注只删除该单元记录', async () => {
+    await service.follow('user-1', 'unit-hangzhou-01');
+    await service.follow('user-1', 'unit-yinzhou-01');
+    await service.unfollow('user-1', 'unit-hangzhou-01');
+    const follows = await service.listFollows('user-1');
+    expect(follows.map((f) => f.unitId)).toEqual(['unit-yinzhou-01']);
+  });
+
+  it('真实台账单元同样可关注（findCatalogUnit 覆盖 real 数据集）', async () => {
+    const dto = await service.follow(
+      'user-1',
+      'real-nb-202607-nwsis-chinese',
+    );
+    expect(dto.announcementId).toBe(REAL_ANNOUNCEMENT_IDS.ningbo202607);
+    expect(dto.versionId).toBe('real-ningbo-2026-07-v1');
+  });
+
+  it('设置材料状态：持久化并递增 version；同状态幂等不递增', async () => {
+    await service.follow('user-1', 'unit-hangzhou-01');
+    const before = await service.listFollows('user-1');
+    expect(before[0]?.version).toBe(0);
+
+    const after = await service.setMaterialStatus(
+      'user-1',
+      'unit-hangzhou-01',
+      'id-card',
+      'done',
+    );
+    expect(after.materialStatuses).toEqual({ 'id-card': 'done' });
+    expect(after.version).toBe(1);
+
+    // 同状态幂等
+    const again = await service.setMaterialStatus(
+      'user-1',
+      'unit-hangzhou-01',
+      'id-card',
+      'done',
+    );
+    expect(again.version).toBe(1);
+  });
+
+  it('材料状态 version 冲突返回 409，不写入', async () => {
+    await service.follow('user-1', 'unit-hangzhou-01');
+    await expect(
+      service.setMaterialStatus(
+        'user-1',
+        'unit-hangzhou-01',
+        'id-card',
+        'done',
+        99, // 与服务端 version=0 冲突
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+    const follows = await service.listFollows('user-1');
+    expect(follows[0]?.materialStatuses).toBeNull();
+    expect(follows[0]?.version).toBe(0);
+  });
+
+  it('记录咨询结论：持久化且不影响匹配状态；空字符串删除该条', async () => {
+    await service.follow('user-1', 'unit-hangzhou-01');
+    const saved = await service.saveConsultationNote(
+      'user-1',
+      'unit-hangzhou-01',
+      'major',
+      '已电话确认，汉语言文学师范符合',
+    );
+    expect(saved.consultationNotes).toEqual({
+      major: '已电话确认，汉语言文学师范符合',
+    });
+    expect(saved.version).toBe(1);
+
+    const cleared = await service.saveConsultationNote(
+      'user-1',
+      'unit-hangzhou-01',
+      'major',
+      '',
+    );
+    expect(cleared.consultationNotes).toBeNull();
+  });
+});
+
+describe('OpportunitiesService：主要备考目标', () => {
+  it('设新 primary 时旧 primary 事务内自动降 backup；未关注不能设角色', async () => {
+    const fake = createFakePrisma();
+    const service = new OpportunitiesService(fake.prisma, fakeProfileService);
+    await service.follow('user-1', 'unit-hangzhou-01');
+    await service.follow('user-1', 'unit-yinzhou-01');
+
+    await service.setRole('user-1', 'unit-hangzhou-01', 'primary');
+    await service.setRole('user-1', 'unit-yinzhou-01', 'primary');
+
+    const follows = await service.listFollows('user-1');
+    expect(follows.find((f) => f.unitId === 'unit-hangzhou-01')?.role).toBe(
+      'backup',
+    );
+    expect(follows.find((f) => f.unitId === 'unit-yinzhou-01')?.role).toBe(
+      'primary',
+    );
+
+    await expect(
+      service.setRole('user-1', 'unit-suzhou-01', 'primary'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    await expect(
+      service.setRole('user-1', 'unit-hangzhou-01', 'only' as never),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('匹配响应返回 primaryTargetUnitId', async () => {
+    const service = new OpportunitiesService(createFakePrisma().prisma, fakeProfileService);
+    await service.follow('user-1', 'unit-hangzhou-01');
+    await service.setRole('user-1', 'unit-hangzhou-01', 'primary');
+    const response = await service.match(PROFILE, 'user-1');
+    expect(response.primaryTargetUnitId).toBe('unit-hangzhou-01');
+  });
+});
+
+describe('OpportunitiesService：备考目标（模块 7）', () => {
+  it('listGoals 聚合活跃关注与公告版本；abandoned 不出现；返回 primaryTargetUnitId', async () => {
+    const service = new OpportunitiesService(createFakePrisma().prisma, fakeProfileService);
+    await service.follow('user-1', 'unit-hangzhou-01');
+    await service.follow('user-1', 'unit-yinzhou-01');
+    await service.setRole('user-1', 'unit-hangzhou-01', 'primary');
+    await service.follow('user-1', 'unit-suzhou-01');
+    await service.transition('user-1', 'unit-suzhou-01', 'abandoned', undefined, '竞争太大');
+
+    const response = await service.listGoals('user-1');
+    expect(response.primaryTargetUnitId).toBe('unit-hangzhou-01');
+    expect(response.goals.map((g) => g.unitId)).toEqual([
+      'unit-hangzhou-01',
+      'unit-yinzhou-01',
+    ]);
+
+    const primary = response.goals[0]!;
+    expect(primary.role).toBe('primary');
+    expect(primary.unitName).toContain('杭州');
+    expect(primary.announcement.officialUrl).toBeTruthy();
+    expect(primary.version.timeline.registrationStart).toBeTruthy();
+    expect(primary.followStatus).toBe('considering');
+    expect(primary.newerVersion).toBe(false);
+
+    // 其他用户的目标不受影响
+    expect((await service.listGoals('user-2')).goals).toEqual([]);
+  });
+
+  it('buildGoals：版本取代标记 newerVersion；closed 被排除；目录缺失单元跳过', () => {
+    const snap = (unitId: string, legacyUnitIds: string[] = []): CatalogSnapshot => ({
+      announcementId: 'ann-x',
+      title: '测试公告',
+      publisher: '测试教育局',
+      officialUrl: 'https://example.gov.cn/ann',
+      versionId: 'ann-x-v2',
+      versionNumber: 2,
+      publishedAt: '2026-02-01',
+      timeline: { registrationStart: '2026-03-01', registrationEnd: '2026-03-10' },
+      unit: {
+        id: unitId,
+        code: 'U1',
+        name: '测试单元',
+        region: { code: '330100', province: '浙江省', city: '杭州市' },
+        subject: 'chinese',
+        stage: 'primary',
+        headcount: 3,
+      },
+      legacyUnitIds,
+    });
+    const follow = (unitId: string, versionId: string, status: FollowRecord['status']): FollowRecord => ({
+      id: `f-${unitId}`,
+      userId: 'user-1',
+      unitId,
+      announcementId: 'ann-x',
+      versionId,
+      status,
+      role: unitId === 'unit-a' ? 'primary' : null,
+      followedAt: '2026-02-10T00:00:00.000Z',
+      statusHistory: [],
+      abandonReason: null,
+      materialStatuses: null,
+      consultationNotes: null,
+      version: 0,
+      remindersMuted: false,
+    });
+
+    const response = buildGoals(
+      [
+        follow('unit-a', 'ann-x-v1', 'preparing'), // 关注在旧版本 → newerVersion
+        follow('unit-b', 'ann-x-v2', 'closed'), // 已关闭 → 不作为目标
+        follow('unit-d-v1', 'ann-x-v1', 'considering'), // 关注记录指向旧版本单元 id → 跨版本对齐
+      ],
+      [snap('unit-a'), snap('unit-b'), snap('unit-c'), snap('unit-d', ['unit-d-v1'])],
+    );
+
+    expect(response.goals).toHaveLength(2);
+    expect(response.goals[0]?.newerVersion).toBe(true);
+    expect(response.goals[1]?.unitId).toBe('unit-d');
+    expect(response.goals[1]?.newerVersion).toBe(true);
+    expect(response.primaryTargetUnitId).toBe('unit-a');
+  });
+});
+
+describe('OpportunitiesService：纠错留痕', () => {
+  it('纠错绑定当前公告版本；内容过短或缺少位置时拒绝', async () => {
+    const fake = createFakePrisma();
+    const service = new OpportunitiesService(fake.prisma, fakeProfileService);
+
+    const created = await service.submitCorrection(
+      'user-1',
+      'unit-hefei-01-v2',
+      { fieldPath: 'major', content: '专业目录少列了一个专业名称' },
+    );
+    expect(created.status).toBe('submitted');
+    expect(fake.corrections[0]?.versionId).toBe('ann-hefei-v2');
+
+    await expect(
+      service.submitCorrection('user-1', 'unit-hangzhou-01', {
+        fieldPath: 'age',
+        content: '太短',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(
+      service.submitCorrection('user-1', 'unit-hangzhou-01', {
+        fieldPath: '',
+        content: '这里是足够长的纠错说明文字',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+});
+
+describe('OpportunitiesService：纠错处理闭环（P0-F / 模块 8）', () => {
+  const REVIEWER = { id: 'staff-1', role: 'admin' };
+
+  async function seedCorrection(fake: ReturnType<typeof createFakePrisma>) {
+    const service = new OpportunitiesService(fake.prisma, fakeProfileService);
+    const created = await service.submitCorrection(
+      'user-1',
+      'unit-hefei-01-v2',
+      { fieldPath: 'headcount', content: '岗位人数与补充公告不一致' },
+    );
+    return { service, created };
+  }
+
+  it('submitted → reviewing → resolved：记录处理人/时间，并给提交人发一条站内通知', async () => {
+    const fake = createFakePrisma();
+    const { service, created } = await seedCorrection(fake);
+
+    const reviewing = await service.reviewCorrection(REVIEWER, created.id, {
+      status: 'reviewing',
+    });
+    expect(reviewing.status).toBe('reviewing');
+    expect(reviewing.reviewerId).toBe('staff-1');
+    expect(reviewing.reviewedAt).toBeTruthy();
+    expect(fake.notifications).toHaveLength(0); // 核对中不通知
+
+    const resolved = await service.reviewCorrection(REVIEWER, created.id, {
+      status: 'resolved',
+      reviewNote: '已按补充公告修正为 12 人',
+    });
+    expect(resolved.status).toBe('resolved');
+    expect(resolved.reviewNote).toBe('已按补充公告修正为 12 人');
+    expect(fake.notifications).toHaveLength(1);
+    const notice = fake.notifications[0] as Record<string, unknown>;
+    expect(notice.userId).toBe('user-1');
+    expect(String(notice.title)).toContain('已采纳并修正');
+    expect(String(notice.body)).toContain('已按补充公告修正为 12 人');
+  });
+
+  it('rejected 必须附处理说明；终态后任何再次处理都被拒绝', async () => {
+    const fake = createFakePrisma();
+    const { service, created } = await seedCorrection(fake);
+
+    await expect(
+      service.reviewCorrection(REVIEWER, created.id, { status: 'rejected' }),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    const rejected = await service.reviewCorrection(REVIEWER, created.id, {
+      status: 'rejected',
+      reviewNote: '官方原文确为 8 人，补充公告未调整该岗位',
+    });
+    expect(rejected.status).toBe('rejected');
+    expect(fake.notifications).toHaveLength(1);
+
+    await expect(
+      service.reviewCorrection(REVIEWER, created.id, { status: 'resolved' }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(fake.notifications).toHaveLength(1); // 被拒绝的推进不产生新通知
+  });
+
+  it('允许 submitted 直接 resolved/rejected；非法状态值拒绝', async () => {
+    const fake = createFakePrisma();
+    const { service, created } = await seedCorrection(fake);
+
+    await expect(
+      service.reviewCorrection(REVIEWER, created.id, { status: 'submitted' }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    await expect(
+      service.reviewCorrection(REVIEWER, created.id, { status: 'unknown' }),
+    ).rejects.toBeInstanceOf(ConflictException);
+
+    const done = await service.reviewCorrection(REVIEWER, created.id, {
+      status: 'resolved',
+    });
+    expect(done.status).toBe('resolved');
+  });
+
+  it('处理不存在的纠错返回 404', async () => {
+    const fake = createFakePrisma();
+    const service = new OpportunitiesService(fake.prisma, fakeProfileService);
+    await expect(
+      service.reviewCorrection(REVIEWER, 'cor-missing', { status: 'reviewing' }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('我的纠错列表只返回本人记录，并带字段中文标签与单元名', async () => {
+    const fake = createFakePrisma();
+    const { service, created } = await seedCorrection(fake);
+
+    const mine = await service.listMyCorrections('user-1');
+    expect(mine).toHaveLength(1);
+    expect(mine[0]?.id).toBe(created.id);
+    expect(mine[0]?.fieldLabel).toBe('招聘人数 / 岗位信息');
+    expect(mine[0]?.unitName).toBeTruthy();
+    expect(await service.listMyCorrections('user-other')).toHaveLength(0);
+  });
+
+  it('员工队列支持按状态过滤并附带提交人账号信息；非法状态值 400', async () => {
+    const fake = createFakePrisma();
+    const { service, created } = await seedCorrection(fake);
+    await service.reviewCorrection(REVIEWER, created.id, { status: 'reviewing' });
+
+    const reviewingList = await service.listCorrectionsForStaff('reviewing');
+    expect(reviewingList).toHaveLength(1);
+    expect(reviewingList[0]?.submitter.email).toBe('u1@example.com');
+
+    expect(await service.listCorrectionsForStaff('submitted')).toHaveLength(0);
+    expect(await service.listCorrectionsForStaff(null)).toHaveLength(1);
+    await expect(
+      service.listCorrectionsForStaff('not-a-status'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+});

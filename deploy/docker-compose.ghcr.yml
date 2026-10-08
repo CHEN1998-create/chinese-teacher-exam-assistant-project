@@ -4,7 +4,7 @@
 name: jiaozhao
 
 x-backend: &backend
-  image: ghcr.nju.edu.cn/${GHCR_OWNER:?Set GHCR_OWNER}/chinese-teacher-exam-assistant-backend:${BACKEND_IMAGE_TAG:-latest}
+  image: ghcr.nju.edu.cn/${GHCR_OWNER:?Set GHCR_OWNER}/chinese-teacher-exam-assistant-project-backend:${BACKEND_IMAGE_TAG:-latest}
   env_file: backend.env
   networks:
     - default
@@ -26,7 +26,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: ghcr.nju.edu.cn/${GHCR_OWNER:?Set GHCR_OWNER}/chinese-teacher-exam-assistant:${FRONTEND_IMAGE_TAG:-latest}
+    image: ghcr.nju.edu.cn/${GHCR_OWNER:?Set GHCR_OWNER}/chinese-teacher-exam-assistant-project-frontend:${FRONTEND_IMAGE_TAG:-latest}
     env_file: frontend.env
     depends_on:
       - backend

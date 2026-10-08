@@ -8,18 +8,18 @@
 
 ## GitHub 镜像仓库（GHCR）发布与拉取部署（推荐）
 
-前端、后端是**两个独立 Git 仓库**。各自的 `.github/workflows/docker-publish.yml` 在每次推送代码后自动构建，也支持在 GitHub Actions 页面手动运行。GitHub 托管机器构建 `linux/amd64` 镜像并推送到各自仓库关联的 GitHub Container Registry（GHCR）Package；上海轻量服务器只拉取镜像，不再在 1.6 GiB 内存机器上构建。镜像内前端固定为 **invited 受邀模式**，不是当前 Vercel 的公开 demo 模式。工作流只会构建各仓库已提交并推送到 GitHub 的内容，本地未提交改动不会进入镜像。**推送镜像不会自动部署或开放服务器。**
+前端、后端源码现已合入同一个项目仓库。根目录 `.github/workflows/docker-publish.yml` 在每次推送后分别构建两份镜像，也支持在 GitHub Actions 页面手动运行。GitHub 托管机器构建 `linux/amd64` 镜像并推送到本仓库关联的两个 GitHub Container Registry（GHCR）Package；上海轻量服务器只拉取镜像，不再在 1.6 GiB 内存机器上构建。镜像内前端固定为 **invited 受邀模式**，不是当前 Vercel 的公开 demo 模式。工作流只会构建本仓库已提交并推送到 GitHub 的内容，本地未提交改动不会进入镜像。**推送镜像不会自动部署或开放服务器。**
 
-1. 两个 Workflow 使用 GitHub 自动提供的 `GITHUB_TOKEN`，权限限定为 `contents: read` 和 `packages: write`，**无需新增 Docker Hub 密钥或个人令牌**。若仓库或组织策略禁用了 Actions/Packages，先在 GitHub 设置中允许它们。
-2. 分别检查并提交各仓库待发布的代码与 Workflow，推送到 GitHub。两条 Actions 成功后，在对应仓库页面的 **Packages**（或账号的 Packages）查看镜像：`ghcr.io/chen1998-create/chinese-teacher-exam-assistant` 和 `ghcr.io/chen1998-create/chinese-teacher-exam-assistant-backend`。每次推送都产生 `sha-<该仓库完整提交 SHA>` 标签；只有默认分支的推送会更新 `latest`。前、后端的 SHA **各不相同**；回滚优先使用各自的 `sha-...` 标签。如果同名 GHCR Package 之前由别的方式创建、未关联仓库，需先在 Package 设置中授予该仓库 Actions 写入权限。
-3. 将本目录的 `docker-compose.ghcr.yml`、`docker-compose.internal.yml`、`Caddyfile` 和两个 `*.env.example` 放到服务器 `/opt/kaobian/deploy/`。真实 `backend.env`、`frontend.env` 与 `.env` 只保存在服务器，权限设为 `600`。服务器已有 `kaobian-net` 和 `kaobian-postgres`；本编排会**复用现有数据库**，不会创建新库。迁移前先确认备份可恢复，且不要与旧应用容器并行运行到耗尽内存。
+1. 工作流使用 GitHub 自动提供的 `GITHUB_TOKEN`，权限限定为 `contents: read` 和 `packages: write`，**无需新增 Docker Hub 密钥或个人令牌**。若仓库或组织策略禁用了 Actions/Packages，先在 GitHub 设置中允许它们。
+2. 检查并提交本仓库待发布的代码与工作流，推送到 GitHub。两个构建任务都成功后，在本仓库的 **Packages**（或账号的 Packages）查看镜像：`ghcr.io/chen1998-create/chinese-teacher-exam-assistant-project-frontend` 和 `ghcr.io/chen1998-create/chinese-teacher-exam-assistant-project-backend`。同一次推送产生相同的 `sha-<本仓库完整提交 SHA>` 标签；只有默认分支的推送会更新 `latest`。回滚优先使用成对的 `sha-...` 标签。原两个仓库的旧 Package 不会再由本工作流更新。
+3. 将本目录的 `docker-compose.ghcr.yml`、`docker-compose.internal.yml`、`Caddyfile`、`.env.example` 和两个 `*.env.example` 放到服务器 `/opt/kaobian/deploy/`。真实 `backend.env`、`frontend.env` 与 `.env` 只保存在服务器，权限设为 `600`。服务器已有 `kaobian-net` 和 `kaobian-postgres`；本编排会**复用现有数据库**，不会创建新库。迁移前先确认备份可恢复，且不要与旧应用容器并行运行到耗尽内存。
 
-服务器 `deploy/.env` 只放非密钥的镜像选择变量（示例值须替换）：
+服务器 `deploy/.env` 可从 `.env.example` 复制；只放非密钥的镜像选择变量（示例值须替换）：
 
 ```dotenv
 GHCR_OWNER=chen1998-create
-BACKEND_IMAGE_TAG=sha-后端仓库的完整提交SHA
-FRONTEND_IMAGE_TAG=sha-前端仓库的完整提交SHA
+BACKEND_IMAGE_TAG=sha-本仓库的完整提交SHA
+FRONTEND_IMAGE_TAG=sha-本仓库的完整提交SHA
 # 完成 ICP 备案、DNS 指向本机并准备公开入口后才设置：
 # SITE_DOMAIN=已备案的域名
 ```
@@ -48,8 +48,8 @@ docker compose -f docker-compose.ghcr.yml --profile public up -d
 
 ```text
 /opt/kaobian/
-├── backend/     # backend 仓库（Dockerfile 在此）
-├── frontend/    # frontend 仓库（Dockerfile 在此）
+├── backend/     # 本仓库的后端源码（Dockerfile 在此）
+├── frontend/    # 本仓库的前端源码（Dockerfile 在此）
 └── deploy/      # 本目录：docker-compose.yml、Caddyfile、env 文件
 ```
 
@@ -97,7 +97,7 @@ echo '/swapfile none swap sw 0 0' >> /etc/fstab
 cd /opt/kaobian/deploy
 cp backend.env.example backend.env    # 填 DATABASE_URL、INTERNAL_TOKEN、CORS_ORIGINS 等
 cp frontend.env.example frontend.env  # INTERNAL_TOKEN 与 backend.env 一致
-echo 'SITE_DOMAIN=你的备案域名' > .env
+cp .env.example .env                  # 填镜像标签；公开入口启用时再填 SITE_DOMAIN
 chmod 600 backend.env frontend.env .env
 ```
 
@@ -133,9 +133,12 @@ docker compose logs -f migrate backend   # 看到 "Nest application successfully
 
 ```bash
 cd /opt/kaobian/deploy
-# 上传新源码（或 git pull）后：
-docker compose build && docker compose up -d   # 迁移随 migrate 任务自动应用
+# GitHub Actions 两个构建任务成功后，先在 .env 中将前后端镜像标签更新为同一个 sha-<完整提交SHA>：
+docker compose -f docker-compose.ghcr.yml -f docker-compose.internal.yml pull
+docker compose -f docker-compose.ghcr.yml -f docker-compose.internal.yml up -d
 ```
+
+若已启用公开入口，以上两条命令改为 `docker compose -f docker-compose.ghcr.yml --profile public pull` 和对应的 `up -d`。不要在当前轻量服务器上执行本地源码构建。
 
 ## 7. 数据库备份（上线当天就配）
 

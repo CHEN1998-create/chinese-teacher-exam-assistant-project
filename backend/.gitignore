@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+*.log
+
+# 本地公告快照存储（生产环境使用对象存储，不入库）
+.data
+
+# TypeScript 增量构建缓存
+tsconfig.build.tsbuildinfo
+*.tsbuildinfo

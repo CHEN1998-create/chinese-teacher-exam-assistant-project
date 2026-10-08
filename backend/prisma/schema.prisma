@@ -1,0 +1,473 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  role      String   @default("user")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  extractionRuns ExtractionRun[]
+  reviewRecords  ReviewRecord[]
+  credential     Credential?
+  sessions       Session[]
+  profile        UserProfile?
+
+  @@map("users")
+}
+
+/**
+ * 受邀用户登录凭证（模块 8）。
+ * 只保存 bcrypt 哈希，绝不保存明文密码；一个用户一条凭证。
+ * 不收集身份证、社保等非必要信息。
+ */
+model Credential {
+  id           String   @id @default(uuid())
+  userId       String   @unique @map("user_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("credentials")
+}
+
+/**
+ * 服务端会话（模块 8）。
+ * token 只以 HttpOnly Cookie 形式下发，库内只存 SHA-256 哈希；
+ * 会话失效靠 revokedAt 或 expiresAt，不在前端保存任何令牌。
+ */
+model Session {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash   String    @unique @map("token_hash")
+  expiresAt   DateTime  @map("expires_at")
+  revokedAt   DateTime? @map("revoked_at")
+  userAgent   String?   @map("user_agent")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/**
+ * 用户基础画像持久化（模块 8）。
+ * 五组画像以 JSON 存，随用户修改 upsert；匹配接口在请求未携带画像时读取本表。
+ * 不保存身份证号、社保账号等敏感字段。
+ */
+model UserProfile {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile   Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("user_profiles")
+}
+
+/**
+ * 用户对报考单元的关注关系（v6.1 模块 5，PRD 7.5）。
+ *
+ * - 关注的是具体报考单元（unitId），不是抽象公告；
+ * - status：considering / preparing / registered / abandoned / closed；
+ * - role：primary（主要备考目标，同一用户至多一个）/ backup（备选）/ null（仅关注）；
+ * - statusHistory 只追加，记录每次状态变化的时间与备注；
+ * - 收藏（创建记录）不自动等于“准备报名”，初始状态恒为 considering。
+ * 画像与公告版本均不存冗余快照，只保留 versionId 指针，用于“有更新版本”提示。
+ */
+model FollowedOpportunity {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  unitId         String   @map("unit_id")
+  announcementId String   @map("announcement_id")
+  versionId      String   @map("version_id")
+  status         String   @default("considering")
+  role           String?
+  followedAt     DateTime @default(now()) @map("followed_at")
+  statusHistory  Json     @map("status_history")
+  abandonReason  String?  @map("abandon_reason")
+  /**
+   * 报名材料完成状态（模块 6）：{ [materialItemId]: "not_started"|"in_progress"|"done"|"not_applicable" }。
+   * 只存进度枚举，不存证件号/扫描件。可空，空视为全部 not_started。
+   */
+  materialStatuses Json? @map("material_statuses")
+  /**
+   * 用户自行记录的官方咨询结论（模块 6）：{ [dimensionKey]: note }。
+   * 仅本账号可见，不参与匹配判断、不作为官方事实。
+   */
+  consultationNotes Json? @map("consultation_notes")
+  /** 乐观锁版本号：每次状态/材料/咨询变更递增，用于并发冲突检测 */
+  version        Int      @default(0)
+  /** 是否关闭该机会的所有站内提醒（报名截止等仍在日程可见，但不产生通知） */
+  remindersMuted Boolean  @default(false) @map("reminders_muted")
+  /**
+   * 最近一次已通知的公告状态基线（模块 7）：{ versionId, lifecycle, sourceOk }。
+   * 仅当基线与当前公告状态不一致时才产生变更通知，随后推进基线——同一变更只通知一次。
+   * 为空表示历史记录（首次同步时按关注版本回填，不产生通知风暴）。
+   */
+  lastNotifiedState Json? @map("last_notified_state")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, unitId])
+  @@index([userId, status])
+  @@map("followed_opportunities")
+}
+
+/**
+ * 机会详情纠错提交（v6.1 模块 5，PRD 7.10）。
+ * 用户在证据层发现公告原文/字段/版本有误时提交；受邀阶段只留痕与回复状态，
+ * 不做自动改判，改判必须走模块 2 审核发布新版本。
+ */
+model OpportunityCorrection {
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  unitId         String    @map("unit_id")
+  announcementId String    @map("announcement_id")
+  versionId      String    @map("version_id")
+  fieldPath      String    @map("field_path")
+  content        String
+  contact        String?
+  status         String    @default("submitted")
+  /** 员工处理说明（不采纳时必填，随站内通知发给提交人） */
+  reviewNote     String?   @map("review_note")
+  /** 最近一次处理人（员工账号 id） */
+  reviewerId     String?   @map("reviewer_id")
+  /** 最近一次处理时间（开始核对/终态均记录） */
+  reviewedAt     DateTime? @map("reviewed_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@index([announcementId, versionId])
+  @@index([status, createdAt])
+  @@map("opportunity_corrections")
+}
+
+/**
+ * 受邀试用服务端事件（v7.0 模块 7）。
+ *
+ * - 只存动作类型 + 枚举/计数维度（props 标量、字符串≤64），不存资格原文与证件信息；
+ * - userId/role/authMode 一律取服务端会话身份，绝不信任客户端；
+ * - dataset 由服务端按公告目录解析（demo=演示台账 / real=真实监测台账），
+ *   用于「演示机会 / 真实机会」分列；
+ * - dedupKey 实现 once-per-user(/unit/step)：与 userId 组成唯一约束，
+ *   重复点击、跨设备重复上报在库层去重（唯一冲突按幂等吞掉）；
+ * - occurredAt 为事件发生时间（限 [now-90d, now+5min]），7 日观察窗口按它计算，
+ *   避免访客事件在登录补报时被登录时刻扭曲口径；createdAt 为服务端摄取时间。
+ */
+model TrialEvent {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  type           String
+  module         String
+  unitId         String?  @map("unit_id")
+  announcementId String?  @map("announcement_id")
+  /** demo=演示台账机会 / real=真实监测台账机会 / null=无关机会 */
+  dataset        String?
+  /** 已脱敏的标量维度：string(≤64) / number / boolean */
+  props          Json?
+  /** live=真实上报 / seed=演示种子 */
+  source         String   @default("live")
+  /** invited=受邀环境 / demo=演示环境 */
+  authMode       String   @default("invited") @map("auth_mode")
+  userRole       String   @map("user_role")
+  /** once-per-user(/unit/step) 去重键；空表示不去重 */
+  dedupKey       String?  @map("dedup_key")
+  /** 事件发生时间（客户端时钟，服务端校验范围） */
+  occurredAt     DateTime @map("occurred_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, dedupKey])
+  @@index([occurredAt])
+  @@index([type])
+  @@map("trial_events")
+}
+
+// ==================== 公告数据流水线（v6.1 数据管道文档） ====================
+
+/** 官方来源登记 */
+model Source {
+  id             String   @id @default(uuid())
+  publisher      String
+  regionCode     String?
+  officialUrl    String
+  sourceType     String // government / institution / other
+  contactInfo    String?
+  lastSuccessAt  DateTime?
+  lastFailReason String?
+  enabled        Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  snapshots SourceSnapshot[]
+
+  @@map("sources")
+}
+
+/**
+ * 原始内容快照：每次提交/获取都留档，永不覆盖。
+ * contentHash 在同一来源下唯一，相同内容不创建重复快照。
+ */
+model SourceSnapshot {
+  id          String   @id @default(uuid())
+  sourceId    String
+  source      Source   @relation(fields: [sourceId], references: [id])
+  officialUrl String?
+  /** 原始内容存储地址（对象存储 key 或本地路径） */
+  storageKey  String
+  mimeType    String
+  /** SHA-256 内容指纹 */
+  contentHash String
+  /** 抓取/提交时间 */
+  fetchedAt   DateTime @default(now()) @map("fetched_at")
+  httpStatus  Int?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  extractionRuns ExtractionRun[]
+
+  @@unique([sourceId, contentHash])
+  @@index([contentHash])
+  @@map("source_snapshots")
+}
+
+/**
+ * 提取任务：状态机 submitted → extracting → pending_review → approved → published。
+ * 另有 rejected、failed 可重入。
+ */
+model ExtractionRun {
+  id             String   @id @default(uuid())
+  snapshotId     String
+  snapshot       SourceSnapshot @relation(fields: [snapshotId], references: [id])
+  announcementId String?
+  /** 解析器/模型版本 */
+  parserVersion  String
+  /** 幂等键：snapshotId + parserVersion */
+  idempotencyKey String   @unique @map("idempotency_key")
+  status         String   @default("submitted")
+  /** 提取进度 0-100 */
+  progress       Int      @default(0)
+  /** 候选结果 JSON（未经审核） */
+  candidate      Json?
+  errorCode      String?
+  errorMessage   String?
+  retryCount     Int      @default(0) @map("retry_count")
+  submittedBy    String?
+  submittedByUser User?   @relation(fields: [submittedBy], references: [id])
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  finishedAt     DateTime? @map("finished_at")
+
+  evidenceAnchors EvidenceAnchor[]
+  reviewRecords   ReviewRecord[]
+  publishedVersion PublishedAnnouncementVersion?
+
+  @@index([status])
+  @@index([announcementId])
+  @@map("extraction_runs")
+}
+
+/**
+ * 字段级证据锚点：高影响字段必须有锚点才能审核通过。
+ * 与候选字段中的 anchor 一一对应，单独建表便于审计与查询。
+ */
+model EvidenceAnchor {
+  id          String   @id @default(uuid())
+  runId       String
+  run         ExtractionRun @relation(fields: [runId], references: [id])
+  field       String
+  locatorKind String // url / file / worksheet / excerpt
+  locatorData Json
+  excerpt     String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([runId, field])
+  @@map("evidence_anchors")
+}
+
+/** 审核留痕（只追加） */
+model ReviewRecord {
+  id           String   @id @default(uuid())
+  runId        String
+  run          ExtractionRun @relation(fields: [runId], references: [id])
+  reviewerId   String
+  reviewer     User     @relation(fields: [reviewerId], references: [id])
+  reviewerName String
+  action       String // approve / approve_with_edit / reject / mark_incomplete
+  reason       String
+  beforePayload Json
+  afterPayload  Json
+  reviewedAt   DateTime @default(now()) @map("reviewed_at")
+
+  @@index([runId])
+  @@map("review_records")
+}
+
+/**
+ * 已发布的不可变公告版本。
+ * 任何修改产生新版本，旧版本标记 superseded 但保留可查。
+ * 用户端与匹配模块只能读取 status=published 的版本。
+ */
+model PublishedAnnouncementVersion {
+  id               String   @id @default(uuid())
+  announcementId   String
+  runId            String   @unique
+  run              ExtractionRun @relation(fields: [runId], references: [id])
+  versionNumber    Int
+  status           String   @default("published") // published / superseded / withdrawn
+  payload          Json
+  publishedAt      DateTime @default(now()) @map("published_at")
+  previousVersionId String?  @unique @map("previous_version_id")
+  previousVersion  PublishedAnnouncementVersion? @relation("VersionChain", fields: [previousVersionId], references: [id])
+  supersededAt     DateTime? @map("superseded_at")
+
+  nextVersion PublishedAnnouncementVersion? @relation("VersionChain")
+
+  @@unique([announcementId, versionNumber])
+  @@index([announcementId, status])
+  @@map("published_announcement_versions")
+}
+
+// ==================== 报名日程与站内提醒（v6.1 模块 6） ====================
+
+/**
+ * 时间线事件：从已发布公告版本的 timeline 生成，按用户关注的报考单元落库。
+ *
+ * - eventKey = `${unitId}-${kind}`，同一用户下唯一；同一公告版本重复同步不产生重复记录；
+ * - 新版本发布导致时间/标题变化时，更新同一条 eventKey 记录，并把旧值追加到 changeHistory；
+ * - dateIso 为 null 表示“待官方通知”，绝不写入推测日期；
+ * - muted 由 FollowedOpportunity.remindersMuted 控制，查询时过滤，不在事件表冗余。
+ */
+model TimelineEvent {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  unitId        String   @map("unit_id")
+  announcementId String  @map("announcement_id")
+  versionId     String   @map("version_id")
+  /** 用户内唯一：unitId + kind */
+  eventKey      String   @map("event_key")
+  kind          String // registration_start / registration_end / review / payment / admit_ticket / written_exam / score / interview / pending_notice
+  title         String
+  /** ISO 日期；待官方通知时为 null */
+  dateIso       String?  @map("date_iso")
+  status        String   @default("active") // active / superseded
+  /** 变更历史：[{versionId, dateIso, title, changedAt}]，只追加 */
+  changeHistory Json     @default("[]") @map("change_history")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, eventKey])
+  @@index([userId, status])
+  @@index([unitId])
+  @@map("timeline_events")
+}
+
+/**
+ * 站内通知记录（不接短信/微信/邮件/Web Push）。
+ *
+ * - severity 三档：must_handle（即将截止/资格变化/岗位取消）、suggest_handle（材料未准备/主要目标未定）、info（公告新增/时间待定）；
+ * - 由事件变更或系统判定产生，前端通知中心按 severity 分级展示，普通信息不与截止风险同视觉强度；
+ * - readAt 为空即未读。
+ */
+model NotificationRecord {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  severity      String // must_handle / suggest_handle / info
+  title         String
+  body          String
+  /** 关联的时间线事件键（可选，非事件类通知留空） */
+  eventKey      String?  @map("event_key")
+  relatedUnitId String?  @map("related_unit_id")
+  readAt        DateTime? @map("read_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([userId, readAt])
+  @@index([userId, severity])
+  @@map("notification_records")
+}
+
+// ==================== 学习计划服务端持久化（模块 8） ====================
+
+/**
+ * 周计划。任务列表以 JSON 存在 DailyPlan 上，调整与复盘以 JSON 存在本表，
+ * 保留前端既有纯函数结构，不重写领域逻辑。
+ */
+model WeeklyPlan {
+  id                String   @id @default(uuid())
+  userId            String   @map("user_id")
+  examTargetId      String   @map("exam_target_id")
+  weekNumber        Int      @map("week_number")
+  startDate         String   @map("start_date")
+  endDate           String   @map("end_date")
+  focus             String
+  status            String
+  version           Int
+  previousVersionId String?  @map("previous_version_id")
+  generationReason  String   @map("generation_reason")
+  adjustments       Json     @default("[]")
+  reviews           Json     @default("[]")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  dailyPlans DailyPlan[]
+  feedbacks  TaskFeedback[]
+
+  @@index([userId, examTargetId])
+  @@map("weekly_plans")
+}
+
+/** 日计划：任务数组以 JSON 存储，字段与前端 DailyPlan 对齐。 */
+model DailyPlan {
+  id                 String   @id @default(uuid())
+  weeklyPlanId       String   @map("weekly_plan_id")
+  weeklyPlan         WeeklyPlan @relation(fields: [weeklyPlanId], references: [id], onDelete: Cascade)
+  userId             String   @map("user_id")
+  date               String
+  dayOfWeek          Int      @map("day_of_week")
+  tasks              Json
+  totalEstimatedTime Int      @map("total_estimated_time")
+  isMinimumViable    Boolean  @default(false) @map("is_minimum_viable")
+  availableMinutes   Int      @map("available_minutes")
+  adjustmentNote     String?  @map("adjustment_note")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@unique([weeklyPlanId, date])
+  @@index([userId, date])
+  @@map("daily_plans")
+}
+
+/**
+ * 任务反馈：一任务一用户一条，修改时更新 updatedAt。
+ * errorTypes 以 JSON 数组存储。
+ */
+model TaskFeedback {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  taskId           String   @map("task_id")
+  weeklyPlanId     String   @map("weekly_plan_id")
+  weeklyPlan       WeeklyPlan @relation(fields: [weeklyPlanId], references: [id], onDelete: Cascade)
+  weeklyVersion    Int      @map("weekly_version")
+  dailyPlanId      String   @map("daily_plan_id")
+  date             String
+  status           String
+  actualTime       Int?     @map("actual_time")
+  incompleteReason String?  @map("incomplete_reason")
+  errorTypes       Json     @default("[]") @map("error_types")
+  hasSecondPractice Boolean @default(false) @map("has_second_practice")
+  notes            String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, taskId])
+  @@index([userId, date])
+  @@map("task_feedbacks")
+}

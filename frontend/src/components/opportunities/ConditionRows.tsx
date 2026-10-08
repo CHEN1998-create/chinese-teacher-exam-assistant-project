@@ -1,0 +1,84 @@
+"use client";
+
+import { cn } from "@/lib/utils";
+import { dimensionLabel } from "@/lib/ia/labels";
+import type { DimensionDTO } from "@/lib/opportunities/api-types";
+import { DIMENSION_VALUE_META } from "@/lib/opportunities/detail-view";
+
+/**
+ * 逐条件结果行（详情第二段 / 列表卡片展开态共用）。
+ * 每行固定两个栏位，严格区分两类信息（PRD v7.0）：
+ * - 「公告怎么写」：官方事实，只取自公告/岗位表原文摘录；未摘录时明确说明，
+ *   不把系统推断写进这一栏；
+ * - 「系统预筛判断」：本系统基于画像的比对结论与原因，UNKNOWN/MANUAL_REVIEW
+ *   带固定护栏——缺信息不是不符合，歧义不能自动判定。
+ */
+export function ConditionRows({
+  dimensions,
+  showDescription = false,
+}: {
+  dimensions: DimensionDTO[];
+  /** 详情页展示公告原文栏；列表卡片展开态可只展示短判断 */
+  showDescription?: boolean;
+}) {
+  return (
+    <ul className="divide-y divide-slate-100">
+      {dimensions.map((dim) => {
+        const meta = DIMENSION_VALUE_META[dim.value];
+        return (
+          <li key={dim.requirementId} className="py-3">
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-sm font-medium text-slate-700">
+                {dim.dimension === "region"
+                  ? "就业地区"
+                  : dimensionLabel(dim.dimension)}
+              </span>
+              <span
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-xs font-medium",
+                  meta.className,
+                )}
+              >
+                <span aria-hidden="true">{meta.symbol}</span>
+                {meta.text}
+              </span>
+            </div>
+
+            {showDescription && (
+              <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
+                <p className="rounded-md bg-slate-50 p-2 text-xs leading-5 text-slate-700">
+                  <span className="block font-medium text-slate-500">
+                    公告怎么写（官方事实）
+                  </span>
+                  {dim.requirementDescription ? (
+                    dim.requirementDescription
+                  ) : (
+                    <span className="text-slate-400">
+                      本条暂无已摘录的公告/岗位表原文，请以官方岗位表对应行核对
+                    </span>
+                  )}
+                </p>
+                <p className="rounded-md bg-white p-2 text-xs leading-5 text-slate-600 ring-1 ring-slate-100">
+                  <span className="block font-medium text-slate-500">
+                    系统预筛判断（基于你填写的画像）
+                  </span>
+                  {dim.reason}
+                  {dim.value === "UNKNOWN" && (
+                    <span className="mt-1 block text-amber-700">
+                      缺少信息不是不符合，补充后会重新判断。
+                    </span>
+                  )}
+                  {dim.value === "MANUAL_REVIEW" && (
+                    <span className="mt-1 block text-amber-700">
+                      公告表述可能有多种解释，需招聘单位确认，系统不能自动判定。
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
